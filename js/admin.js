@@ -20,7 +20,51 @@
     const workForm = document.getElementById("workForm");
     const connectButton = connectForm.querySelector("button[type=submit]");
     const publishButton = document.getElementById("publishButton");
+    const installButton = document.getElementById("installButton");
     const managedWorks = document.getElementById("managedWorks");
+    let installPrompt = null;
+
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("./service-worker.js").catch(error => {
+                console.error("Service worker registration failed:", error);
+            });
+        });
+    }
+
+    function isInstalled() {
+        return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    }
+
+    if (isInstalled()) installButton.hidden = true;
+
+    window.addEventListener("beforeinstallprompt", event => {
+        event.preventDefault();
+        installPrompt = event;
+        installButton.hidden = false;
+    });
+
+    window.addEventListener("appinstalled", () => {
+        installPrompt = null;
+        installButton.hidden = true;
+        showStatus("作品管理应用已安装到主屏幕。", "success");
+    });
+
+    installButton.addEventListener("click", async () => {
+        if (installPrompt) {
+            installPrompt.prompt();
+            await installPrompt.userChoice;
+            installPrompt = null;
+            return;
+        }
+
+        if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !isInstalled()) {
+            showStatus("在 Safari 中点“分享”按钮，再选择“添加到主屏幕”。");
+            return;
+        }
+
+        showStatus("在浏览器菜单中选择“安装应用”或“添加到主屏幕”。");
+    });
 
     function showStatus(message, kind) {
         status.textContent = message;
