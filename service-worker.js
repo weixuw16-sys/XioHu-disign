@@ -1,4 +1,4 @@
-const CACHE_NAME = "xiohu-works-v1";
+const CACHE_NAME = "xiohu-works-v2";
 const APP_SHELL = [
     "./admin.html",
     "./css/admin.css",
