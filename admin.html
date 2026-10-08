@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>作品管理 - XioHu</title>
+    <link rel="stylesheet" href="./css/admin.css">
+    <link rel="icon" type="image/png" href="./png/%E6%9C%AA%E5%91%BD%E5%90%8D%E4%BD%9C%E5%93%81.png">
+</head>
+<body>
+    <header class="admin-header">
+        <a class="admin-brand" href="./index.html">
+            <img src="./png/%E6%9C%AA%E5%91%BD%E5%90%8D%E4%BD%9C%E5%93%81.png" alt="">
+            <span>XioHu / WORKS</span>
+        </a>
+        <a href="./works.html">返回作品集 ↗</a>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-intro">
+            <p class="eyebrow">PORTFOLIO MANAGEMENT</p>
+            <h1>作品管理</h1>
+            <p>发布或移除作品。保存后会直接提交到 GitHub 仓库，GitHub Pages 随后自动更新。</p>
+        </section>
+
+        <p class="admin-status" id="adminStatus" role="status" aria-live="polite"></p>
+
+        <section class="admin-panel auth-panel" id="authPanel">
+            <h2>连接 GitHub</h2>
+            <p>创建一个仅限 <strong>weixuw16-sys/XioHu-disign</strong> 仓库的 Fine-grained personal access token，并仅授予 <strong>Contents: Read and write</strong> 权限。token 只在此页面内存中使用，刷新或退出后会清除。</p>
+            <a class="token-help" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">创建 Fine-grained token ↗</a>
+            <form id="connectForm" class="connect-form">
+                <label for="githubToken">GitHub token</label>
+                <div class="token-row">
+                    <input id="githubToken" name="token" type="password" autocomplete="off" spellcheck="false" required>
+                    <button class="button button-dark" type="submit">连接</button>
+                </div>
+                <p class="form-hint">请勿使用 classic token，也不要把 token 分享给他人。</p>
+            </form>
+        </section>
+
+        <section class="admin-workspace" id="adminWorkspace" hidden>
+            <div class="workspace-heading">
+                <div>
+                    <p class="eyebrow">CONNECTED TO REPOSITORY</p>
+                    <h2>管理作品</h2>
+                </div>
+                <button class="button button-light" id="disconnectButton" type="button">退出并清除 token</button>
+            </div>
+
+            <section class="admin-panel">
+                <h3>发布新作品</h3>
+                <form id="workForm" class="work-form">
+                    <label>作品名称
+                        <input name="title" type="text" maxlength="100" required>
+                    </label>
+                    <label>作品类别
+                        <select name="category" required>
+                            <option value="brand">品牌设计</option>
+                            <option value="illustration">插画</option>
+                            <option value="photo">摄影</option>
+                            <option value="motion">动画 / 视频</option>
+                        </select>
+                    </label>
+                    <label class="form-wide">作品介绍
+                        <textarea name="description" rows="3" maxlength="500" required></textarea>
+                    </label>
+                    <label class="form-wide">作品图片或视频
+                        <input name="media" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" required>
+                        <span class="form-hint">支持 JPG、PNG、WebP、GIF、MP4、WebM；单个文件最大 15 MB。</span>
+                    </label>
+                    <label class="featured-choice form-wide">
+                        <input name="featured" type="checkbox" checked>
+                        <span>同时显示在首页精选作品中（最多显示 4 个）</span>
+                    </label>
+                    <div class="form-wide form-actions">
+                        <button class="button button-dark" id="publishButton" type="submit">发布作品</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="admin-panel works-panel">
+                <div class="list-heading">
+                    <h3>已发布作品</h3>
+                    <span id="workCount"></span>
+                </div>
+                <div class="managed-works" id="managedWorks"></div>
+            </section>
+        </section>
+    </main>
+    <script src="./js/admin.js"></script>
+</body>
+</html>

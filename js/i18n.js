@@ -59,6 +59,8 @@
         "VIEW WORK ↗": "VIEW PROJECT ↗",
         "VIEW PHOTO ↗": "VIEW PHOTO ↗",
         "VIEW VIDEO ↗": "VIEW VIDEO ↗",
+        "GRAPHIC DESIGN": "GRAPHIC DESIGN",
+        "作品管理": "Manage Works",
         "摄影作品 01": "Photography 01",
         "摄影作品 02": "Photography 02",
         "春节摄影": "Chinese New Year Photography"
@@ -113,6 +115,8 @@
             button.title = language === "en" ? "切换到中文" : "Switch to English";
         });
     }
+
+    window.translateXiohuPage = () => translatePage(getLanguage());
 
     function addSwitcher() {
         if (document.querySelector("[data-language-switch]")) return;

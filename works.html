@@ -33,7 +33,7 @@
 <button class="filter-btn" data-filter="motion" type="button">动画</button>
 </div>
 
-<div class="works-gallery">
+<div class="works-gallery" id="worksGallery" aria-live="polite">
 <article class="portfolio-card" data-category="brand" data-type="image"><div class="portfolio-media"><img src="./png/disign2.png" alt="品牌视觉设计" loading="lazy"><div class="portfolio-overlay"><div class="overlay-content"><p>BRAND DESIGN</p><h2>品牌视觉设计</h2><span>品牌 Logo、包装以及视觉系统设计。</span><div class="view-work">VIEW WORK ↗</div></div></div></div><div class="portfolio-info"><span>01 / BRAND DESIGN</span><h3>品牌视觉设计</h3></div></article>
 
 <article class="portfolio-card" data-category="illustration" data-type="image"><div class="portfolio-media illustration-media"><img src="./png/%5B002566%5D.png" alt="原创角色设计" loading="lazy"><div class="portfolio-overlay"><div class="overlay-content"><p>ILLUSTRATION</p><h2>原创角色设计</h2><span>原创角色与数字插画作品。</span><div class="view-work">VIEW WORK ↗</div></div></div></div><div class="portfolio-info"><span>02 / ILLUSTRATION</span><h3>原创角色设计</h3></div></article>
@@ -48,11 +48,12 @@
 
 <article class="portfolio-card" data-category="motion" data-type="video"><div class="portfolio-media"><video muted loop autoplay playsinline preload="metadata"><source src="./vidio/%E5%A7%94%E6%89%98%202.mp4" type="video/mp4">您的浏览器不支持视频播放。</video><div class="portfolio-overlay"><div class="overlay-content"><p>MOTION DESIGN</p><h2>动态视觉设计</h2><span>动画、视频编辑与动态视觉作品。</span><div class="view-work">VIEW VIDEO ↗</div></div></div></div><div class="portfolio-info"><span>07 / MOTION DESIGN</span><h3>动态视觉设计</h3></div></article>
 </div>
+<p class="works-load-error" id="worksLoadError" role="status" hidden>作品暂时无法载入，请稍后重试。</p>
 </section>
 </main>
 
 <div class="work-lightbox" id="workLightbox" aria-hidden="true"><button class="lightbox-close" id="lightboxClose" type="button" aria-label="关闭">×</button><div class="lightbox-inner" id="lightboxInner"></div></div>
-<footer class="works-footer"><a href="./index.html" class="back-home"><span class="back-arrow">←</span><span>BACK TO HOME</span></a></footer>
+<footer class="works-footer"><a href="./index.html" class="back-home"><span class="back-arrow">←</span><span>BACK TO HOME</span></a><a href="./admin.html" class="works-admin-link">作品管理</a></footer>
 
 <script src="./js/works.js"></script>
 <script src="./js/i18n.js"></script>

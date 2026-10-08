@@ -1,364 +1,149 @@
-/* =========================================================
-   WORK FILTER
-========================================================= */
-
-const filterButtons =
-    document.querySelectorAll(".filter-btn");
-
-const portfolioCards =
-    document.querySelectorAll(".portfolio-card");
-
-
-filterButtons.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        const filter =
-            button.dataset.filter;
-
-
-        /* 移除所有 active */
-
-        filterButtons.forEach(btn => {
-
-            btn.classList.remove("active");
-
-        });
-
-
-        /* 当前按钮 */
-
-        button.classList.add("active");
-
-
-        /* 筛选作品 */
-
-        portfolioCards.forEach((card, index) => {
-
-            const category =
-                card.dataset.category;
-
-
-            if (
-                filter === "all" ||
-                category === filter
-            ) {
-
-                card.classList.remove("hidden");
-
-
-                /* 重新播放出现动画 */
-
-                card.style.animation = "none";
-
-                void card.offsetWidth;
-
-                card.style.animation =
-                    `cardReveal 0.7s cubic-bezier(.16,1,.3,1) ${index * 0.08}s both`;
-
-
-            } else {
-
-                card.classList.add("hidden");
-
-            }
-
-        });
-
-    });
-
-});
-
-
-
-/* =========================================================
-   LIGHTBOX ELEMENTS
-========================================================= */
-
-const lightbox =
-    document.getElementById("workLightbox");
-
-const lightboxInner =
-    document.getElementById("lightboxInner");
-
-const lightboxClose =
-    document.getElementById("lightboxClose");
-
-
-
-/* =========================================================
-   OPEN LIGHTBOX
-========================================================= */
-
-function openLightbox() {
-
-    if (!lightbox) return;
-
-
-    lightbox.classList.add("active");
-
-    lightbox.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-
-
-
-/* =========================================================
-   CLOSE LIGHTBOX
-========================================================= */
-
-function closeLightbox() {
-
-    if (!lightbox) return;
-
-
-    lightbox.classList.remove("active");
-
-    lightbox.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-
-    document.body.style.overflow =
-        "";
-
-
-    setTimeout(() => {
-
-        if (lightboxInner) {
-
-            lightboxInner.innerHTML = "";
-
+(() => {
+    const categoryLabels = {
+        brand: "BRAND DESIGN",
+        illustration: "ILLUSTRATION",
+        photo: "PHOTOGRAPHY",
+        motion: "MOTION DESIGN"
+    };
+    const categoryFilters = document.querySelectorAll(".filter-btn");
+    const gallery = document.getElementById("worksGallery");
+    const loadError = document.getElementById("worksLoadError");
+    const lightbox = document.getElementById("workLightbox");
+    const lightboxInner = document.getElementById("lightboxInner");
+
+    function makeMedia(work) {
+        if (work.type === "video") {
+            const video = document.createElement("video");
+            video.muted = true;
+            video.loop = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            const source = document.createElement("source");
+            source.src = work.media;
+            source.type = work.media.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
+            video.appendChild(source);
+            const fallback = document.createElement("span");
+            fallback.textContent = "您的浏览器不支持视频播放。";
+            video.appendChild(fallback);
+            return video;
         }
 
-    }, 400);
-
-}
-
-
-
-/* =========================================================
-   IMAGE LIGHTBOX
-========================================================= */
-
-document
-    .querySelectorAll(".portfolio-media img")
-    .forEach(image => {
-
-
-        image.addEventListener(
-            "click",
-            () => {
-
-
-                if (!lightboxInner) return;
-
-
-                /* 清空 */
-
-                lightboxInner.innerHTML =
-                    "";
-
-
-                /* 创建新图片 */
-
-                const newImage =
-                    document.createElement("img");
-
-
-                newImage.src =
-                    image.currentSrc ||
-                    image.src;
-
-
-                newImage.alt =
-                    image.alt;
-
-
-                lightboxInner.appendChild(
-                    newImage
-                );
-
-
-                openLightbox();
-
-            }
-        );
-
-    });
-
-
-
-/* =========================================================
-   VIDEO LIGHTBOX
-========================================================= */
-
-document
-    .querySelectorAll(".portfolio-media video")
-    .forEach(video => {
-
-
-        video.addEventListener(
-            "click",
-            event => {
-
-
-                event.preventDefault();
-
-
-                if (!lightboxInner) return;
-
-
-                /* 清空 */
-
-                lightboxInner.innerHTML =
-                    "";
-
-
-                /* 创建视频 */
-
-                const newVideo =
-                    document.createElement("video");
-
-
-                newVideo.src =
-                    video.currentSrc ||
-                    video.querySelector(
-                        "source"
-                    )?.src ||
-                    "";
-
-
-                newVideo.controls =
-                    true;
-
-
-                newVideo.autoplay =
-                    true;
-
-
-                newVideo.loop =
-                    true;
-
-
-                newVideo.playsInline =
-                    true;
-
-
-                newVideo.setAttribute(
-                    "playsinline",
-                    ""
-                );
-
-
-                lightboxInner.appendChild(
-                    newVideo
-                );
-
-
-                openLightbox();
-
-
-                /* 播放 */
-
-                newVideo
-                    .play()
-                    .catch(() => {});
-
-            }
-        );
-
-    });
-
-
-
-/* =========================================================
-   CLOSE BUTTON
-========================================================= */
-
-if (lightboxClose) {
-
-    lightboxClose.addEventListener(
-        "click",
-        closeLightbox
-    );
-
-}
-
-
-
-/* =========================================================
-   CLICK BACKGROUND TO CLOSE
-========================================================= */
-
-if (lightbox) {
-
-    lightbox.addEventListener(
-        "click",
-        event => {
-
-
-            if (
-                event.target === lightbox
-            ) {
-
-                closeLightbox();
-
-            }
-
-        }
-    );
-
-}
-
-
-
-/* =========================================================
-   ESC CLOSE
-========================================================= */
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-
-        if (
-            event.key === "Escape" &&
-            lightbox &&
-            lightbox.classList.contains("active")
-        ) {
-
-            closeLightbox();
-
-        }
-
+        const image = document.createElement("img");
+        image.src = work.media;
+        image.alt = work.alt || work.title;
+        image.loading = "lazy";
+        return image;
     }
-);
 
+    function renderWorks(works) {
+        gallery.replaceChildren();
+        works.forEach((work, index) => {
+            const categoryLabel = categoryLabels[work.category] || "DESIGN";
+            const card = document.createElement("article");
+            card.className = "portfolio-card";
+            card.dataset.category = work.category;
+            card.dataset.type = work.type;
 
+            const media = document.createElement("div");
+            media.className = `portfolio-media${work.category === "illustration" ? " illustration-media" : ""}`;
+            media.appendChild(makeMedia(work));
 
-/* =========================================================
-   CLICK LIGHTBOX CONTENT
-   防止点击图片本身关闭
-========================================================= */
+            const overlay = document.createElement("div");
+            overlay.className = "portfolio-overlay";
+            const content = document.createElement("div");
+            content.className = "overlay-content";
+            const category = document.createElement("p");
+            category.textContent = categoryLabel;
+            const title = document.createElement("h2");
+            title.textContent = work.title;
+            const description = document.createElement("span");
+            description.textContent = work.description;
+            const view = document.createElement("div");
+            view.className = "view-work";
+            view.textContent = work.type === "video" ? "VIEW VIDEO ↗" : work.category === "photo" ? "VIEW PHOTO ↗" : "VIEW WORK ↗";
+            content.append(category, title, description, view);
+            overlay.appendChild(content);
+            media.appendChild(overlay);
 
-if (lightboxInner) {
+            const info = document.createElement("div");
+            info.className = "portfolio-info";
+            const number = document.createElement("span");
+            number.textContent = `${String(index + 1).padStart(2, "0")} / ${categoryLabel}`;
+            const heading = document.createElement("h3");
+            heading.textContent = work.title;
+            info.append(number, heading);
+            card.append(media, info);
+            gallery.appendChild(card);
+        });
+        if (window.translateXiohuPage) window.translateXiohuPage();
+    }
 
-    lightboxInner.addEventListener(
-        "click",
-        event => {
+    function setFilter(filter) {
+        categoryFilters.forEach(button => button.classList.toggle("active", button.dataset.filter === filter));
+        gallery.querySelectorAll(".portfolio-card").forEach((card, index) => {
+            const visible = filter === "all" || card.dataset.category === filter;
+            card.classList.toggle("hidden", !visible);
+            if (visible) {
+                card.style.animation = "none";
+                void card.offsetWidth;
+                card.style.animation = `cardReveal 0.7s cubic-bezier(.16,1,.3,1) ${index * 0.08}s both`;
+            }
+        });
+    }
 
-            event.stopPropagation();
-
+    function openLightbox(media) {
+        lightboxInner.replaceChildren();
+        let content;
+        if (media instanceof HTMLVideoElement) {
+            content = document.createElement("video");
+            content.src = media.currentSrc || media.querySelector("source")?.src || "";
+            content.controls = true;
+            content.autoplay = true;
+            content.loop = true;
+            content.playsInline = true;
+            content.play().catch(() => {});
+        } else {
+            content = document.createElement("img");
+            content.src = media.currentSrc || media.src;
+            content.alt = media.alt;
         }
-    );
+        lightboxInner.appendChild(content);
+        lightbox.classList.add("active");
+        lightbox.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+    }
 
-}
+    function closeLightbox() {
+        lightbox.classList.remove("active");
+        lightbox.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+        window.setTimeout(() => lightboxInner.replaceChildren(), 400);
+    }
+
+    categoryFilters.forEach(button => button.addEventListener("click", () => setFilter(button.dataset.filter)));
+    gallery.addEventListener("click", event => {
+        const media = event.target.closest(".portfolio-media img, .portfolio-media video");
+        if (media) openLightbox(media);
+    });
+    document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+    lightbox.addEventListener("click", event => {
+        if (event.target === lightbox) closeLightbox();
+    });
+    lightboxInner.addEventListener("click", event => event.stopPropagation());
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && lightbox.classList.contains("active")) closeLightbox();
+    });
+
+    fetch("./data/works.json")
+        .then(response => {
+            if (!response.ok) throw new Error(`作品数据请求失败：${response.status}`);
+            return response.json();
+        })
+        .then(renderWorks)
+        .catch(error => {
+            console.error(error);
+            gallery.replaceChildren();
+            loadError.hidden = false;
+        });
+})();
