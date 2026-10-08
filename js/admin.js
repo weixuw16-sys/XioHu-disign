@@ -92,7 +92,14 @@
         }
         if (!response.ok) {
             const reason = body.message || response.statusText || "未知错误";
-            throw new Error(`GitHub API (${response.status}): ${reason}`);
+            const method = options.method || "GET";
+            const endpoint = `${method} ${path.split("?")[0]}`;
+            const permissionHelp = response.status === 403
+                ? path.includes("/git/refs/")
+                    ? "请检查 Contents: Read and write 权限，并确认 main 分支规则允许直接推送。"
+                    : "请检查 token 是否授权了 XioHu-disign 仓库和 Contents: Read and write 权限。"
+                : "";
+            throw new Error(`GitHub API (${response.status}) [${endpoint}]: ${reason}${permissionHelp ? ` ${permissionHelp}` : ""}`);
         }
         return body;
     }
@@ -113,6 +120,7 @@
     }
 
     async function getRemoteState() {
+        showStatus("正在读取 main 分支…");
         const reference = await api(`/git/ref/heads/${encodeURIComponent(BRANCH)}`);
         const commitSha = reference.object.sha;
         const commit = await api(`/git/commits/${commitSha}`);
@@ -187,6 +195,7 @@
         ];
 
         if (file) {
+            showStatus("正在上传媒体文件…");
             const blob = await api("/git/blobs", {
                 method: "POST",
                 body: JSON.stringify({
@@ -204,6 +213,7 @@
             }
         }
 
+        showStatus("正在创建作品数据提交…");
         const newTree = await api("/git/trees", {
             method: "POST",
             body: JSON.stringify({ base_tree: state.treeSha, tree })
@@ -216,6 +226,7 @@
                 parents: [state.commitSha]
             })
         });
+        showStatus("正在更新 main 分支…");
         await api(`/git/refs/heads/${encodeURIComponent(BRANCH)}`, {
             method: "PATCH",
             body: JSON.stringify({ sha: commit.sha, force: false })
@@ -305,7 +316,7 @@
         };
 
         publishButton.disabled = true;
-        showStatus("正在上传作品并提交到 GitHub…");
+        showStatus("准备发布作品…");
         try {
             const state = await getRemoteState();
             const currentWorks = state.works;
