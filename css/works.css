@@ -1070,7 +1070,24 @@ footer a:hover {
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 24px;
     background: #f5f1e8;
+}
+
+.works-admin-link {
+    color: #1d1d1d;
+    font-size: 12px;
+    opacity: 0.55;
+    text-decoration: none;
+}
+
+.works-admin-link:hover {
+    opacity: 1;
+}
+
+.works-load-error {
+    margin-top: 30px;
+    color: #a74632;
 }
 
 

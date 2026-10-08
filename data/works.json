@@ -1,0 +1,72 @@
+[
+  {
+    "id": "work-brand-identity",
+    "category": "brand",
+    "type": "image",
+    "title": "品牌视觉设计",
+    "description": "品牌 Logo、包装以及视觉系统设计。",
+    "media": "./png/disign2.png",
+    "alt": "品牌视觉设计",
+    "featured": true
+  },
+  {
+    "id": "work-new-year-photography",
+    "category": "photo",
+    "type": "image",
+    "title": "春节摄影",
+    "description": "生活、环境与人物摄影作品。",
+    "media": "./png/photograph/DSC0238.jpg",
+    "alt": "春节摄影",
+    "featured": true
+  },
+  {
+    "id": "work-original-character",
+    "category": "illustration",
+    "type": "image",
+    "title": "原创角色设计",
+    "description": "原创角色与数字插画作品。",
+    "media": "./png/%5B002566%5D.png",
+    "alt": "原创角色设计",
+    "featured": true
+  },
+  {
+    "id": "work-motion-design",
+    "category": "motion",
+    "type": "video",
+    "title": "动态视觉设计",
+    "description": "动画、视频编辑与动态视觉作品。",
+    "media": "./vidio/%E7%BB%98%E7%94%BB%E5%A7%94%E6%89%98_2.mp4",
+    "alt": "动态视觉设计",
+    "featured": true
+  },
+  {
+    "id": "work-product-photography",
+    "category": "photo",
+    "type": "image",
+    "title": "产品摄影",
+    "description": "产品与商业视觉摄影。",
+    "media": "./png/photograph/IMG_1667.JPG",
+    "alt": "产品摄影",
+    "featured": false
+  },
+  {
+    "id": "work-minimal-character",
+    "category": "illustration",
+    "type": "image",
+    "title": "极简人物设计",
+    "description": "极简的卡通人物设计",
+    "media": "./png/oc1%20(1).png",
+    "alt": "极简人物设计",
+    "featured": false
+  },
+  {
+    "id": "work-commission-motion",
+    "category": "motion",
+    "type": "video",
+    "title": "动态视觉设计",
+    "description": "动画、视频编辑与动态视觉作品。",
+    "media": "./vidio/%E5%A7%94%E6%89%98%202.mp4",
+    "alt": "动态视觉设计",
+    "featured": false
+  }
+]
