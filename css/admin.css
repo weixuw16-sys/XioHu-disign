@@ -61,6 +61,18 @@ textarea {
     text-underline-offset: 4px;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.install-button {
+    min-height: 38px;
+    padding: 0 13px;
+    font-size: 12px;
+}
+
 .admin-main {
     width: min(980px, 88%);
     margin: 0 auto;
@@ -344,6 +356,14 @@ textarea:focus {
 @media (max-width: 650px) {
     .admin-header {
         padding: 14px 6%;
+    }
+
+    .header-actions {
+        gap: 12px;
+    }
+
+    .admin-header > .header-actions > a {
+        font-size: 11px;
     }
 
     .admin-main {

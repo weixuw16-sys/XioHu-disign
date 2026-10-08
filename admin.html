@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#f5f1e8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="XioHu Works">
     <title>作品管理 - XioHu</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
     <link rel="stylesheet" href="./css/admin.css">
     <link rel="icon" type="image/png" href="./png/%E6%9C%AA%E5%91%BD%E5%90%8D%E4%BD%9C%E5%93%81.png">
 </head>
@@ -14,7 +20,10 @@
             <img src="./png/%E6%9C%AA%E5%91%BD%E5%90%8D%E4%BD%9C%E5%93%81.png" alt="">
             <span>XioHu / WORKS</span>
         </a>
-        <a href="./works.html">返回作品集 ↗</a>
+        <div class="header-actions">
+            <button class="button button-light install-button" id="installButton" type="button">安装到手机</button>
+            <a href="./works.html">返回作品集 ↗</a>
+        </div>
     </header>
 
     <main class="admin-main">
