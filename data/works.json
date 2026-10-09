@@ -1,5 +1,15 @@
 [
   {
+    "id": "work-210fcea3-fa42-48bc-a11f-7b5dd3c82f84",
+    "category": "motion",
+    "type": "video",
+    "title": "AE剪辑",
+    "description": "AE视频剪辑练习",
+    "media": "./works-assets/210fcea3-fa42-48bc-a11f-7b5dd3c82f84.mp4",
+    "alt": "AE剪辑",
+    "featured": true
+  },
+  {
     "id": "work-brand-identity",
     "category": "brand",
     "type": "image",
