@@ -11,10 +11,11 @@
     function createMedia(work) {
         if (work.type === "video") {
             const video = document.createElement("video");
-            video.autoplay = true;
             video.muted = true;
             video.loop = true;
             video.playsInline = true;
+            video.controls = true;
+            video.preload = "metadata";
             const source = document.createElement("source");
             source.src = work.media;
             source.type = work.media.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
@@ -72,7 +73,7 @@
         });
     }
 
-    fetch("./data/works.json")
+    fetch("./data/works.json", { cache: "no-store" })
         .then(response => {
             if (!response.ok) throw new Error(`作品数据请求失败：${response.status}`);
             return response.json();

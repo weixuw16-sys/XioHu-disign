@@ -320,7 +320,16 @@
         try {
             const state = await getRemoteState();
             const currentWorks = state.works;
-            const updatedWorks = [work, ...currentWorks];
+            let featuredCount = work.featured ? 1 : 0;
+            const retainedWorks = currentWorks.map(item => {
+                if (!item.featured) return item;
+                if (featuredCount < 4) {
+                    featuredCount += 1;
+                    return item;
+                }
+                return { ...item, featured: false };
+            });
+            const updatedWorks = [work, ...retainedWorks];
             await commitWorks(updatedWorks, state, { file: { file, path: `works-assets/${filename}`, title: work.title } });
             works = updatedWorks;
             renderWorks();
