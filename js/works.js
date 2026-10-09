@@ -18,6 +18,7 @@
             video.loop = true;
             video.autoplay = true;
             video.playsInline = true;
+            video.controls = true;
             video.preload = "metadata";
             const source = document.createElement("source");
             source.src = work.media;
@@ -123,7 +124,7 @@
 
     categoryFilters.forEach(button => button.addEventListener("click", () => setFilter(button.dataset.filter)));
     gallery.addEventListener("click", event => {
-        const media = event.target.closest(".portfolio-media img, .portfolio-media video");
+        const media = event.target.closest(".portfolio-media img");
         if (media) openLightbox(media);
     });
     document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
@@ -135,7 +136,7 @@
         if (event.key === "Escape" && lightbox.classList.contains("active")) closeLightbox();
     });
 
-    fetch("./data/works.json")
+    fetch("./data/works.json", { cache: "no-store" })
         .then(response => {
             if (!response.ok) throw new Error(`作品数据请求失败：${response.status}`);
             return response.json();
