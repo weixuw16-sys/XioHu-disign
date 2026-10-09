@@ -1,4 +1,4 @@
-const CACHE_NAME = "xiohu-works-v3";
+const CACHE_NAME = "xiohu-works-v4";
 const APP_SHELL = [
     "./admin.html",
     "./css/admin.css",
@@ -35,6 +35,7 @@ self.addEventListener("fetch", event => {
 
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
+    if (request.headers.has("range") || /\.(?:mp4|webm|mov|m4v)$/i.test(url.pathname)) return;
 
     if (url.pathname.endsWith("/data/works.json")) {
         event.respondWith((async () => {
