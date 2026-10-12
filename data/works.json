@@ -1,5 +1,19 @@
 [
   {
+    "id": "work-1318ed69-ba82-426a-96d5-223288d2ee55",
+    "category": "brand",
+    "type": "image",
+    "title": "中秋茶叶包装",
+    "description": "中秋节设计的中秋茶叶包装设计",
+    "media": "./works-assets/7f581ff0-6325-467f-b4c0-310e838c229d.png",
+    "alt": "中秋茶叶包装",
+    "featured": true,
+    "images": [
+      "./works-assets/7f581ff0-6325-467f-b4c0-310e838c229d.png",
+      "./works-assets/c37aaa64-16ab-4ff2-a533-649e13749535.png"
+    ]
+  },
+  {
     "id": "work-bf0ef2d3-7ed7-4b2c-adcb-47662e054cb1",
     "category": "photo",
     "type": "image",
@@ -37,7 +51,7 @@
     "description": "品牌 Logo、包装以及视觉系统设计。",
     "media": "./png/disign2.png",
     "alt": "品牌视觉设计",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-new-year-photography",
