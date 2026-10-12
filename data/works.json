@@ -1,5 +1,15 @@
 [
   {
+    "id": "work-be952033-82f0-4fea-b2bc-96ddc4e6b3c1",
+    "category": "photo",
+    "type": "image",
+    "title": "玩具车",
+    "description": "玩具赛车拍摄",
+    "media": "./works-assets/be952033-82f0-4fea-b2bc-96ddc4e6b3c1.png",
+    "alt": "玩具车",
+    "featured": true
+  },
+  {
     "id": "work-210fcea3-fa42-48bc-a11f-7b5dd3c82f84",
     "category": "motion",
     "type": "video",
@@ -37,7 +47,7 @@
     "description": "原创角色与数字插画作品。",
     "media": "./png/%5B002566%5D.png",
     "alt": "原创角色设计",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-motion-design",
@@ -47,7 +57,7 @@
     "description": "动画、视频编辑与动态视觉作品。",
     "media": "./vidio/%E7%BB%98%E7%94%BB%E5%A7%94%E6%89%98_2.mp4",
     "alt": "动态视觉设计",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-product-photography",
