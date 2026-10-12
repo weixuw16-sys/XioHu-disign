@@ -48,22 +48,22 @@ the following repository secrets:
 - `SUPABASE_ACCESS_TOKEN`: create an access token from
   [Supabase Account → Access Tokens](https://supabase.com/dashboard/account/tokens).
 - `SUPABASE_PROJECT_REF`: `gttcyzjomilimqrrnrow`.
-- `SUPABASE_DB_PASSWORD`: the database password you set when creating the project.
 - `OAUTH_CLIENT_ID`: the OAuth app's client ID.
 - `OAUTH_CLIENT_SECRET`: the OAuth app's client secret.
 
 Do not put the client secret, a GitHub token, the Supabase service-role key,
-database password, or the Supabase access token in the website or chat. The
-Supabase Edge Functions receive `SUPABASE_URL` and
+or the Supabase access token in the website or chat. The deployment applies the
+database migration through the Supabase Management API, so it does not need a
+database password. The Supabase Edge Functions receive `SUPABASE_URL` and
 `SUPABASE_SERVICE_ROLE_KEY` from Supabase at runtime.
 
 ## 4. Deploy the database migration and Edge Functions
 
 After this setup change is merged to `main`, open the repository's **Actions**
 tab, run **Deploy portfolio manager backend**, and confirm the run succeeds.
-The workflow links the project, applies the migration, writes the OAuth
-credentials and exact admin-page URL as server secrets, and deploys both Edge
-Functions.
+The workflow applies the migration through the Management API, writes the
+OAuth credentials and exact admin-page URL as server secrets, and deploys both
+Edge Functions.
 
 The functions validate a random manager session ID themselves. `github-auth`
 uses OAuth state validation, and `github-manager` permits requests only from
