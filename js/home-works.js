@@ -8,6 +8,12 @@
     const worksGrid = document.getElementById("homeWorks");
     const photographyGrid = document.getElementById("homePhotography");
 
+    function mediaItems(work) {
+        return Array.isArray(work.mediaItems) && work.mediaItems.length
+            ? work.mediaItems
+            : [work.media];
+    }
+
     function createMedia(work) {
         if (work.type === "video") {
             const video = document.createElement("video");
@@ -23,12 +29,25 @@
             return video;
         }
 
-        const image = document.createElement("img");
-        image.src = work.media;
-        image.alt = work.alt || work.title;
-        image.loading = "lazy";
-        image.style.cursor = "pointer";
-        return image;
+        const images = mediaItems(work);
+        if (images.length === 1) {
+            const image = document.createElement("img");
+            image.src = images[0];
+            image.alt = work.alt || work.title;
+            image.loading = "lazy";
+            image.style.cursor = "pointer";
+            return image;
+        }
+        const gallery = document.createElement("div");
+        gallery.className = "work-image-gallery";
+        images.forEach((source, index) => {
+            const image = document.createElement("img");
+            image.src = source;
+            image.alt = `${work.alt || work.title} (${index + 1}/${images.length})`;
+            image.loading = "lazy";
+            gallery.appendChild(image);
+        });
+        return gallery;
     }
 
     function renderFeatured(works) {
@@ -58,8 +77,10 @@
         works.filter(work => work.category === "photo").slice(0, 2).forEach((work, index) => {
             const card = document.createElement("div");
             card.className = `photo-item reveal show${index === 0 ? " photo-large" : ""}`;
-            const image = createMedia(work);
+            const image = document.createElement("img");
+            image.src = mediaItems(work)[0];
             image.alt = `摄影作品 ${String(index + 1).padStart(2, "0")}`;
+            image.loading = "lazy";
             card.appendChild(image);
             const caption = document.createElement("div");
             caption.className = "photo-caption";

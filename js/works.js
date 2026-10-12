@@ -11,6 +11,12 @@
     const lightbox = document.getElementById("workLightbox");
     const lightboxInner = document.getElementById("lightboxInner");
 
+    function mediaItems(work) {
+        return Array.isArray(work.mediaItems) && work.mediaItems.length
+            ? work.mediaItems
+            : [work.media];
+    }
+
     function makeMedia(work) {
         if (work.type === "video") {
             const video = document.createElement("video");
@@ -30,11 +36,24 @@
             return video;
         }
 
-        const image = document.createElement("img");
-        image.src = work.media;
-        image.alt = work.alt || work.title;
-        image.loading = "lazy";
-        return image;
+        const images = mediaItems(work);
+        if (images.length === 1) {
+            const image = document.createElement("img");
+            image.src = images[0];
+            image.alt = work.alt || work.title;
+            image.loading = "lazy";
+            return image;
+        }
+        const gallery = document.createElement("div");
+        gallery.className = "portfolio-image-gallery";
+        images.forEach((source, index) => {
+            const image = document.createElement("img");
+            image.src = source;
+            image.alt = `${work.alt || work.title} (${index + 1}/${images.length})`;
+            image.loading = "lazy";
+            gallery.appendChild(image);
+        });
+        return gallery;
     }
 
     function renderWorks(works) {
@@ -47,7 +66,8 @@
             card.dataset.type = work.type;
 
             const media = document.createElement("div");
-            media.className = `portfolio-media${work.category === "illustration" ? " illustration-media" : ""}`;
+            const hasGallery = work.type === "image" && mediaItems(work).length > 1;
+            media.className = `portfolio-media${work.category === "illustration" ? " illustration-media" : ""}${hasGallery ? " multi-image-media" : ""}`;
             media.appendChild(makeMedia(work));
 
             const overlay = document.createElement("div");

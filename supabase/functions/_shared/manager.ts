@@ -16,6 +16,7 @@ export interface Work {
   title: string;
   description: string;
   media: string;
+  mediaItems?: string[];
   alt: string;
   featured: boolean;
 }
@@ -269,6 +270,32 @@ export function validateWork(work: unknown): asserts work is Work {
   if (typeof value.featured !== "boolean") {
     throw new Error("首页精选设置无效。");
   }
+  if (value.mediaItems !== undefined) {
+    if (
+      !Array.isArray(value.mediaItems) ||
+      value.mediaItems.length < 1 ||
+      value.mediaItems.length > 20 ||
+      new Set(value.mediaItems).size !== value.mediaItems.length ||
+      value.mediaItems.some((path) => typeof path !== "string")
+    ) {
+      throw new Error("作品图片数量必须为 1–20 张。");
+    }
+    if (value.type !== "image" || value.mediaItems[0] !== value.media) {
+      throw new Error("作品图片数据无效。");
+    }
+    for (const media of value.mediaItems) {
+      if (
+        !/^\.\/works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif)$/i.test(media)
+      ) {
+        throw new Error("作品图片路径无效。");
+      }
+    }
+  } else if (
+    typeof value.media !== "string" ||
+    !value.media
+  ) {
+    throw new Error("作品媒体路径无效。");
+  }
 }
 
 export async function commitPortfolio(
@@ -278,7 +305,9 @@ export async function commitPortfolio(
   options: {
     filePath?: string;
     fileContent?: string;
+    files?: Array<{ path: string; content: string }>;
     removedPath?: string;
+    removedPaths?: string[];
     message: string;
   },
 ): Promise<void> {
@@ -289,8 +318,14 @@ export async function commitPortfolio(
     content: `${JSON.stringify(updatedWorks, null, 2)}\n`,
   }];
 
-  if (options.filePath && options.fileContent) {
-    const raw = options.fileContent.replace(/\s/g, "");
+  const files = options.files || (
+    options.filePath && options.fileContent
+      ? [{ path: options.filePath, content: options.fileContent }]
+      : []
+  );
+  if (files.length > 20) throw new Error("一次最多处理 20 个作品文件。");
+  for (const file of files) {
+    const raw = file.content.replace(/\s/g, "");
     let size: number;
     try {
       size = atob(raw).length;
@@ -300,7 +335,7 @@ export async function commitPortfolio(
     if (size > MAX_FILE_SIZE) {
       throw new Error("文件超过 15 MB，请压缩后再上传。");
     }
-    const path = options.filePath;
+    const path = file.path;
     if (
       !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
         path,
@@ -315,23 +350,29 @@ export async function commitPortfolio(
     tree.push({ path, mode: "100644", type: "blob", sha: blob.sha });
   }
 
-  if (
-    options.removedPath &&
-    !updatedWorks.some((work) => work.media === `./${options.removedPath}`)
-  ) {
+  const removedPaths = [
+    ...new Set([
+      ...(options.removedPaths || []),
+      ...(options.removedPath ? [options.removedPath] : []),
+    ]),
+  ];
+  for (const path of removedPaths) {
     if (
       !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
-        options.removedPath,
+        path,
       )
     ) {
       throw new Error("待删除媒体路径无效。");
     }
-    tree.push({
-      path: options.removedPath,
-      mode: "100644",
-      type: "blob",
-      sha: null,
-    });
+    const relativePath = `./${path}`;
+    if (
+      !updatedWorks.some((work) =>
+        work.media === relativePath ||
+        work.mediaItems?.includes(relativePath)
+      )
+    ) {
+      tree.push({ path, mode: "100644", type: "blob", sha: null });
+    }
   }
 
   const newTree = await githubApi<{ sha: string }>(token, "/git/trees", {

@@ -38,9 +38,7 @@ Deno.serve(async (request) => {
     }
 
     const state = await getPortfolioState(session.github_token);
-    if (body.action === "publish") {
-      validateWork(body.work);
-      const work = body.work as Work;
+    if (body.action === "upload-asset") {
       const file = body.file;
       if (
         !file || typeof file.path !== "string" ||
@@ -48,11 +46,58 @@ Deno.serve(async (request) => {
       ) {
         throw new Error("上传文件数据缺失。");
       }
+      if (
+        !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
+          file.path,
+        )
+      ) {
+        throw new Error("上传文件路径无效。");
+      }
       if (fileByteLength(file.content) > MAX_FILE_SIZE) {
         throw new Error("文件超过 15 MB，请压缩后再上传。");
       }
-      if (work.media !== `./${file.path}`) {
-        throw new Error("作品媒体路径与上传文件不匹配。");
+      await commitPortfolio(session.github_token, state, state.works, {
+        filePath: file.path,
+        fileContent: file.content,
+        message: "Upload portfolio work media",
+      });
+      return jsonResponse({ ok: true }, 200, cors);
+    }
+
+    if (body.action === "delete-assets") {
+      if (
+        !Array.isArray(body.paths) || body.paths.length < 1 ||
+        body.paths.length > 20 ||
+        body.paths.some((path: unknown) => typeof path !== "string")
+      ) {
+        throw new Error("待清理文件列表无效。");
+      }
+      await commitPortfolio(session.github_token, state, state.works, {
+        removedPaths: body.paths,
+        message: "Clean up incomplete portfolio work upload",
+      });
+      return jsonResponse({ ok: true }, 200, cors);
+    }
+
+    if (body.action === "publish") {
+      validateWork(body.work);
+      const work = body.work as Work;
+      const file = body.file;
+      if (file !== undefined) {
+        if (
+          !file || typeof file.path !== "string" ||
+          typeof file.content !== "string"
+        ) {
+          throw new Error("上传文件数据缺失。");
+        }
+        if (fileByteLength(file.content) > MAX_FILE_SIZE) {
+          throw new Error("文件超过 15 MB，请压缩后再上传。");
+        }
+        if (work.media !== `./${file.path}`) {
+          throw new Error("作品媒体路径与上传文件不匹配。");
+        }
+      } else if (!work.mediaItems?.length) {
+        throw new Error("作品图片数据缺失。");
       }
       if (state.works.some((item) => item.id === work.id)) {
         throw new Error("作品 ID 已存在，请重试。");
@@ -69,8 +114,7 @@ Deno.serve(async (request) => {
       const updatedWorks = [work, ...retainedWorks];
 
       await commitPortfolio(session.github_token, state, updatedWorks, {
-        filePath: file.path,
-        fileContent: file.content,
+        ...(file ? { filePath: file.path, fileContent: file.content } : {}),
         message: `Add portfolio work: ${work.title}`,
       });
       return jsonResponse({ works: updatedWorks }, 200, cors);
@@ -87,11 +131,14 @@ Deno.serve(async (request) => {
         );
       }
       const updatedWorks = state.works.filter((item) => item.id !== body.id);
-      const removedPath = work.media.startsWith("./works-assets/")
-        ? work.media.slice(2)
-        : undefined;
+      const mediaItems = work.mediaItems?.length
+        ? work.mediaItems
+        : [work.media];
+      const removedPaths = mediaItems
+        .filter((path) => path.startsWith("./works-assets/"))
+        .map((path) => path.slice(2));
       await commitPortfolio(session.github_token, state, updatedWorks, {
-        removedPath,
+        removedPaths,
         message: `Remove portfolio work: ${work.title}`,
       });
       return jsonResponse({ works: updatedWorks }, 200, cors);

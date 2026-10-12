@@ -2,6 +2,7 @@
     const OWNER = "weixuw16-sys";
     const REPOSITORY = "XioHu-disign";
     const MAX_FILE_SIZE = 15 * 1024 * 1024;
+    const MAX_IMAGE_COUNT = 20;
     const config = {
         url: "https://gttcyzjomilimqrrnrow.supabase.co",
         anonKey: "sb_publishable_Xw21vpSBcy-Y5hU5nd10Yw_6vzitsxi"
@@ -129,7 +130,10 @@
         works.forEach(work => {
             const row = document.createElement("article");
             row.className = "managed-work";
-            const mediaUrl = new URL(work.media, window.location.href).href;
+            const mediaItems = Array.isArray(work.mediaItems) && work.mediaItems.length
+                ? work.mediaItems
+                : [work.media];
+            const mediaUrl = new URL(mediaItems[0], window.location.href).href;
             let preview;
             if (work.type === "video") {
                 preview = document.createElement("video");
@@ -147,7 +151,8 @@
             const title = document.createElement("strong");
             title.textContent = work.title;
             const details = document.createElement("span");
-            details.textContent = `${CATEGORY_LABELS[work.category] || work.category}${work.featured ? " · 首页精选" : ""}`;
+            const mediaCount = work.type === "image" && mediaItems.length > 1 ? ` · ${mediaItems.length} 张图片` : "";
+            details.textContent = `${CATEGORY_LABELS[work.category] || work.category}${mediaCount}${work.featured ? " · 首页精选" : ""}`;
             meta.append(title, details);
             const remove = document.createElement("button");
             remove.className = "delete-button";
@@ -177,7 +182,11 @@
     }
 
     async function deleteWork(work) {
-        if (!window.confirm(`确定删除「${work.title}」吗？这会从作品集移除此作品${work.media.startsWith("./works-assets/") ? "及其上传文件" : ""}。`)) return;
+        const mediaItems = Array.isArray(work.mediaItems) && work.mediaItems.length
+            ? work.mediaItems
+            : [work.media];
+        const uploadedItems = mediaItems.filter(path => path.startsWith("./works-assets/"));
+        if (!window.confirm(`确定删除「${work.title}」吗？这会从作品集移除此作品${uploadedItems.length ? `及其 ${uploadedItems.length} 个上传文件` : ""}。`)) return;
         showStatus("正在安全提交删除操作…");
         managedWorks.querySelectorAll("button").forEach(button => { button.disabled = true; });
         try {
@@ -254,43 +263,69 @@
     workForm.addEventListener("submit", async event => {
         event.preventDefault();
         const formData = new FormData(workForm);
-        const file = formData.get("media");
-        const extension = file instanceof File ? getFileExtension(file) : "";
-        if (!extension) {
-            showStatus("请选择受支持的图片或 MP4/WebM 视频文件。", "error");
+        const files = Array.from(workForm.elements.media.files || []);
+        if (files.length === 0) {
+            showStatus("请选择图片或 MP4/WebM 视频文件。", "error");
             return;
         }
-        if (file.size > MAX_FILE_SIZE) {
-            showStatus("文件超过 15 MB，请压缩后再上传。", "error");
+        if (files.some(file => !getFileExtension(file))) {
+            showStatus("请选择受支持的 JPG、PNG、WebP、GIF 图片或 MP4/WebM 视频。", "error");
+            return;
+        }
+        const hasVideo = files.some(file => file.type.startsWith("video/"));
+        if ((hasVideo && files.length !== 1) || (!hasVideo && files.length > MAX_IMAGE_COUNT)) {
+            showStatus(hasVideo ? "视频作品一次只能选择 1 个视频。" : `一篇作品最多上传 ${MAX_IMAGE_COUNT} 张图片。`, "error");
+            return;
+        }
+        if (files.some(file => file.size > MAX_FILE_SIZE)) {
+            showStatus("每个文件最大 15 MB，请压缩超限文件后再上传。", "error");
             return;
         }
 
         const id = makeId();
         const title = String(formData.get("title")).trim();
+        const uploadedPaths = [];
+        const mediaItems = files.map(file => `./works-assets/${makeId()}.${getFileExtension(file)}`);
         const work = {
             id: `work-${id}`,
             category: formData.get("category"),
-            type: file.type.startsWith("video/") ? "video" : "image",
+            type: hasVideo ? "video" : "image",
             title,
             description: String(formData.get("description")).trim(),
-            media: `./works-assets/${id}.${extension}`,
+            media: mediaItems[0],
+            ...(hasVideo ? {} : { mediaItems }),
             alt: title,
             featured: formData.get("featured") === "on"
         };
 
         publishButton.disabled = true;
-        showStatus("正在安全上传作品…");
+        showStatus(`正在安全上传 ${files.length} 个文件（1/${files.length}）…`);
         try {
-            const bytes = new Uint8Array(await file.arrayBuffer());
+            let videoFile;
+            for (let index = 0; index < files.length; index += 1) {
+                const file = files[index];
+                const path = mediaItems[index].slice(2);
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                if (hasVideo) {
+                    videoFile = { path, content: encodeBase64(bytes) };
+                } else {
+                    await backend("github-manager", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: "upload-asset",
+                            file: { path, content: encodeBase64(bytes) }
+                        })
+                    });
+                    uploadedPaths.push(mediaItems[index]);
+                }
+                showStatus(`正在安全上传文件（${index + 1}/${files.length}）…`);
+            }
             const response = await backend("github-manager", {
                 method: "POST",
                 body: JSON.stringify({
                     action: "publish",
                     work,
-                    file: {
-                        path: work.media.slice(2),
-                        content: encodeBase64(bytes)
-                    }
+                    ...(videoFile ? { file: videoFile } : {})
                 })
             });
             works = response.works;
@@ -299,6 +334,21 @@
             workForm.elements.featured.checked = true;
             showStatus("作品已发布。GitHub Pages 更新后，访客即可查看。", "success");
         } catch (error) {
+            if (uploadedPaths.length) {
+                try {
+                    await backend("github-manager", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: "delete-assets",
+                            paths: uploadedPaths.map(path => path.slice(2))
+                        })
+                    });
+                } catch (cleanupError) {
+                    console.error("Could not remove incomplete work uploads:", cleanupError);
+                    showStatus(`${error.message} 未完成的上传文件清理失败，请稍后检查仓库。`, "error");
+                    return;
+                }
+            }
             showStatus(error.message, "error");
         } finally {
             publishButton.disabled = false;
