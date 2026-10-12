@@ -1,15 +1,5 @@
 [
   {
-    "id": "work-be952033-82f0-4fea-b2bc-96ddc4e6b3c1",
-    "category": "photo",
-    "type": "image",
-    "title": "玩具车",
-    "description": "玩具赛车拍摄",
-    "media": "./works-assets/be952033-82f0-4fea-b2bc-96ddc4e6b3c1.png",
-    "alt": "玩具车",
-    "featured": true
-  },
-  {
     "id": "work-210fcea3-fa42-48bc-a11f-7b5dd3c82f84",
     "category": "motion",
     "type": "video",
