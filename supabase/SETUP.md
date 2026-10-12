@@ -39,30 +39,31 @@ Open **GitHub → Settings → Developer settings → OAuth Apps → New OAuth A
 Create the app and keep its client secret private. The app requests `public_repo`
 only; do not add the `repo` scope.
 
-## 3. Set the server-only OAuth secrets
+## 3. Create and store the GitHub OAuth credentials
 
-From the repository root, set the OAuth app credentials and the exact admin-page
-URL. Do not put the client secret or any GitHub token in the website, source
-code, or chat.
+Keep the OAuth app's client secret private. In the GitHub repository, open
+**Settings → Secrets and variables → Actions → New repository secret** and add
+the following repository secrets:
 
-```sh
-npx supabase secrets set --project-ref YOUR_PROJECT_REF `
-  GITHUB_CLIENT_ID=YOUR_GITHUB_OAUTH_CLIENT_ID `
-  GITHUB_CLIENT_SECRET=YOUR_GITHUB_OAUTH_CLIENT_SECRET `
-  APP_URL=https://weixuw16-sys.github.io/XioHu-disign/admin.html
-```
+- `SUPABASE_ACCESS_TOKEN`: create an access token from
+  [Supabase Account → Access Tokens](https://supabase.com/dashboard/account/tokens).
+- `SUPABASE_PROJECT_REF`: `gttcyzjomilimqrrnrow`.
+- `SUPABASE_DB_PASSWORD`: the database password you set when creating the project.
+- `GITHUB_CLIENT_ID`: the OAuth app's client ID.
+- `GITHUB_CLIENT_SECRET`: the OAuth app's client secret.
 
-In PowerShell, the same command can be entered on one line without the
-backticks. The Supabase Edge Functions already provide `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY` to the runtime; never copy the service-role key
-into the browser.
+Do not put the client secret, a GitHub token, the Supabase service-role key,
+database password, or the Supabase access token in the website or chat. The
+Supabase Edge Functions receive `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` from Supabase at runtime.
 
-## 4. Deploy the Edge Functions
+## 4. Deploy the database migration and Edge Functions
 
-```sh
-npx supabase functions deploy github-auth --project-ref YOUR_PROJECT_REF --no-verify-jwt
-npx supabase functions deploy github-manager --project-ref YOUR_PROJECT_REF --no-verify-jwt
-```
+After this setup change is merged to `main`, open the repository's **Actions**
+tab, run **Deploy portfolio manager backend**, and confirm the run succeeds.
+The workflow links the project, applies the migration, writes the OAuth
+credentials and exact admin-page URL as server secrets, and deploys both Edge
+Functions.
 
 The functions validate a random manager session ID themselves. `github-auth`
 uses OAuth state validation, and `github-manager` permits requests only from
@@ -70,13 +71,10 @@ the published admin page and from a live server-side session.
 
 ## 5. Connect the website
 
-In Supabase **Project Settings → API**, copy the **Project URL** and the
-**anon / publishable key** (not the service-role key). Open the live
-[作品管理页](https://weixuw16-sys.github.io/XioHu-disign/admin.html), enter
-those two public values once on each device, and select **使用 GitHub 登录**.
-The app remembers the public Supabase connection settings and keeps a
-server-backed session for 30 days. Use **退出登录** to revoke and clear the
-current device's session.
+After the workflow succeeds, open the live
+[作品管理页](https://weixuw16-sys.github.io/XioHu-disign/admin.html) and select
+**继续使用 GitHub 登录**. The app remembers a server-backed session for 30
+days. Use **退出登录** to revoke and clear the current device's session.
 
 If GitHub organization or repository rules require OAuth app approval, approve
 the OAuth app for the repository owner before logging in.

@@ -6,6 +6,9 @@ create table if not exists public.manager_sessions (
     created_at timestamptz not null default now()
 );
 
+create index if not exists manager_sessions_expires_at_idx
+    on public.manager_sessions (expires_at);
+
 alter table public.manager_sessions enable row level security;
 
 revoke all on public.manager_sessions from anon, authenticated;

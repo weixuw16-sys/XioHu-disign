@@ -1,0 +1,60 @@
+name: Deploy portfolio manager backend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Check required secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN" || (echo "::error::Add the SUPABASE_ACCESS_TOKEN repository secret." && exit 1)
+          test -n "$SUPABASE_PROJECT_REF" || (echo "::error::Add the SUPABASE_PROJECT_REF repository secret." && exit 1)
+          test -n "$SUPABASE_DB_PASSWORD" || (echo "::error::Add the SUPABASE_DB_PASSWORD repository secret." && exit 1)
+          test -n "$GITHUB_CLIENT_ID" || (echo "::error::Add the GITHUB_CLIENT_ID repository secret." && exit 1)
+          test -n "$GITHUB_CLIENT_SECRET" || (echo "::error::Add the GITHUB_CLIENT_SECRET repository secret." && exit 1)
+
+      - name: Link Supabase project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Apply database migration
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Set server-side OAuth secrets
+        env:
+          GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GITHUB_CLIENT_SECRET }}
+          APP_URL: https://weixuw16-sys.github.io/XioHu-disign/admin.html
+        run: |
+          supabase secrets set "GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID" "GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET" "APP_URL=$APP_URL"
+
+      - name: Deploy GitHub OAuth function
+        run: supabase functions deploy github-auth --no-verify-jwt
+
+      - name: Deploy portfolio manager function
+        run: supabase functions deploy github-manager --no-verify-jwt

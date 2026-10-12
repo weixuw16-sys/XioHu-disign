@@ -2,7 +2,10 @@
     const OWNER = "weixuw16-sys";
     const REPOSITORY = "XioHu-disign";
     const MAX_FILE_SIZE = 15 * 1024 * 1024;
-    const CONFIG_KEY = "xiohu-manager-supabase-config";
+    const config = {
+        url: "https://gttcyzjomilimqrrnrow.supabase.co",
+        anonKey: "sb_publishable_Xw21vpSBcy-Y5hU5nd10Yw_6vzitsxi"
+    };
     const SESSION_PREFIX = "xiohu-manager-session:";
     const CATEGORY_LABELS = {
         brand: "品牌设计",
@@ -10,14 +13,12 @@
         photo: "摄影",
         motion: "动画 / 视频"
     };
-    let config = null;
     let sessionId = "";
     let works = [];
 
     const status = document.getElementById("adminStatus");
     const authPanel = document.getElementById("authPanel");
     const workspace = document.getElementById("adminWorkspace");
-    const configForm = document.getElementById("configForm");
     const githubLoginButton = document.getElementById("githubLoginButton");
     const workForm = document.getElementById("workForm");
     const publishButton = document.getElementById("publishButton");
@@ -67,19 +68,6 @@
         status.textContent = message;
         status.dataset.kind = kind || "info";
         status.classList.add("visible");
-    }
-
-    function readConfig() {
-        try {
-            const saved = JSON.parse(localStorage.getItem(CONFIG_KEY) || "null");
-            if (!saved || typeof saved.url !== "string" || typeof saved.anonKey !== "string") return null;
-            const parsedUrl = new URL(saved.url);
-            if (parsedUrl.protocol !== "https:" || parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash) return null;
-            if (!saved.anonKey.trim()) return null;
-            return { url: parsedUrl.origin, anonKey: saved.anonKey.trim() };
-        } catch {
-            return null;
-        }
     }
 
     function sessionStorageKey() {
@@ -176,7 +164,7 @@
         authPanel.hidden = true;
         workspace.hidden = false;
         renderWorks();
-        showStatus("已通过 GitHub 安全登录。下次打开此设备无需再次登录，登录会话 30 天后过期。", "success");
+        showStatus(`已通过 GitHub 账号 ${OWNER} 安全登录。此设备会记住登录状态 30 天。`, "success");
     }
 
     function encodeBase64(bytes) {
@@ -222,37 +210,6 @@
         return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
-    function saveConfig() {
-        const urlInput = document.getElementById("supabaseUrl").value.trim();
-        const anonKey = document.getElementById("supabaseAnonKey").value.trim();
-        try {
-            const parsedUrl = new URL(urlInput);
-            if (parsedUrl.protocol !== "https:" || parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash) {
-                throw new Error("请输入 Supabase 项目根地址，例如 https://abc123.supabase.co。");
-            }
-            if (!anonKey) throw new Error("请输入 Supabase anon / publishable key。");
-            if (config && config.url !== parsedUrl.origin) {
-                localStorage.removeItem(sessionStorageKey());
-                sessionId = "";
-            }
-            config = { url: parsedUrl.origin, anonKey };
-            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-            githubLoginButton.hidden = false;
-            showStatus("连接设置已保存在此设备。现在可使用 GitHub 登录。", "success");
-            return true;
-        } catch (error) {
-            showStatus(error.message || "Supabase Project URL 无效。", "error");
-            return false;
-        }
-    }
-
-    config = readConfig();
-    if (config) {
-        document.getElementById("supabaseUrl").value = config.url;
-        document.getElementById("supabaseAnonKey").value = config.anonKey;
-        githubLoginButton.hidden = false;
-    }
-
     const oauthError = new URLSearchParams(window.location.search).get("auth_error");
     if (oauthError) {
         history.replaceState(null, "", window.location.pathname);
@@ -276,13 +233,7 @@
         sessionId = localStorage.getItem(sessionStorageKey()) || "";
     }
 
-    configForm.addEventListener("submit", event => {
-        event.preventDefault();
-        saveConfig();
-    });
-
     githubLoginButton.addEventListener("click", () => {
-        if (!config && !saveConfig()) return;
         const url = getFunctionUrl("github-auth");
         window.location.assign(`${url}?action=start`);
     });
@@ -367,7 +318,6 @@
         works = [];
         workspace.hidden = true;
         authPanel.hidden = false;
-        githubLoginButton.hidden = !config;
         managedWorks.replaceChildren();
         showStatus("已退出登录，本设备会话已清除。");
     });

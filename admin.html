@@ -36,26 +36,15 @@
         <p class="admin-status" id="adminStatus" role="status" aria-live="polite"></p>
 
         <section class="admin-panel auth-panel" id="authPanel">
-            <h2>连接管理后台</h2>
-            <p>首次使用时配置一次 Supabase 项目。下面的 Project URL 和 anon key 是公开配置，不是 GitHub 密钥；GitHub 授权令牌只保存在后端。</p>
-            <form id="configForm" class="connect-form">
-                <label for="supabaseUrl">Supabase Project URL</label>
-                <input id="supabaseUrl" name="supabaseUrl" type="url" inputmode="url" placeholder="https://你的项目编号.supabase.co" autocomplete="url" required>
-                <label for="supabaseAnonKey">Supabase anon / publishable key</label>
-                <input id="supabaseAnonKey" name="supabaseAnonKey" type="password" autocomplete="off" spellcheck="false" required>
-                <p class="form-hint">这两项会保存在当前设备上；不要把 service_role key 或 GitHub Client Secret 填在这里。</p>
-                <div class="form-actions">
-                    <button class="button button-dark" id="saveConfigButton" type="submit">保存连接设置</button>
-                </div>
-            </form>
-            <button class="button button-dark github-login-button" id="githubLoginButton" type="button" hidden>使用 GitHub 登录</button>
+            <h2>使用 GitHub 登录</h2>
+            <p>登录后可管理作品。GitHub 授权由 Supabase 后端保管，这台设备会记住登录状态 30 天，无需重复粘贴 token。</p>
+            <p class="backend-configured">Supabase 项目连接已预设；首次启用还需完成一次 OAuth 部署</p>
+            <button class="button button-dark github-login-button" id="githubLoginButton" type="button">继续使用 GitHub 登录</button>
             <details class="setup-help">
-                <summary>首次设置 Supabase（一次性）</summary>
+                <summary>首次设置 GitHub 登录（一次性）</summary>
                 <ol>
-                    <li>创建一个免费的 Supabase 项目，并运行仓库中的 <code>supabase/migrations/20261012000000_create_manager_sessions.sql</code>。</li>
-                    <li>在 GitHub 创建 OAuth App，授权范围仅需公开仓库的 <code>public_repo</code>；回调地址使用 Supabase 函数 URL，详见 <a href="./supabase/SETUP.md">设置说明</a>。</li>
-                    <li>按设置说明部署 <code>github-auth</code> 和 <code>github-manager</code> 两个 Edge Functions，并在 Supabase 保存 GitHub OAuth 密钥。</li>
-                    <li>从 Supabase 项目设置复制 Project URL 和 anon / publishable key，填入上方并保存。</li>
+                    <li>数据库及网页连接信息已配置。仍需创建 GitHub OAuth App 并部署 Supabase 登录函数。</li>
+                    <li>按 <a href="./supabase/SETUP.md">GitHub 登录设置说明</a> 完成最后的授权设置。</li>
                 </ol>
             </details>
         </section>

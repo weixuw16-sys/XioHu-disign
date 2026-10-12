@@ -169,12 +169,17 @@ textarea {
     gap: 10px;
 }
 
-.connect-form .form-actions {
-    margin: 6px 0 18px;
-}
-
 .github-login-button {
     margin: 4px 0 24px;
+}
+
+.backend-configured {
+    display: inline-block;
+    margin: 4px 0 18px;
+    padding: 8px 11px;
+    border: 1px solid rgba(40, 110, 73, 0.3);
+    color: #286e49;
+    font-size: 12px;
 }
 
 .setup-help {
