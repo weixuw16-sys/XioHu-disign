@@ -24,22 +24,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
         run: |
           test -n "$SUPABASE_ACCESS_TOKEN" || (echo "::error::Add the SUPABASE_ACCESS_TOKEN repository secret." && exit 1)
           test -n "$SUPABASE_PROJECT_REF" || (echo "::error::Add the SUPABASE_PROJECT_REF repository secret." && exit 1)
-          test -n "$OAUTH_CLIENT_ID" || (echo "::error::Add the OAUTH_CLIENT_ID repository secret." && exit 1)
-          test -n "$OAUTH_CLIENT_SECRET" || (echo "::error::Add the OAUTH_CLIENT_SECRET repository secret." && exit 1)
-
-      - name: Set server-side OAuth secrets
-        env:
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
-          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-          APP_URL: https://weixuw16-sys.github.io/XioHu-disign/admin.html
-        run: |
-          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "GITHUB_CLIENT_ID=$OAUTH_CLIENT_ID" "GITHUB_CLIENT_SECRET=$OAUTH_CLIENT_SECRET" "APP_URL=$APP_URL"
 
       - name: Deploy GitHub OAuth function
         env:
