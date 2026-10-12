@@ -2,6 +2,14 @@ name: Deploy portfolio manager backend
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-portfolio-manager-backend.yml"
+      - "supabase/functions/_shared/manager.ts"
+      - "supabase/functions/github-auth/**"
+      - "supabase/functions/github-manager/**"
 
 permissions:
   contents: read

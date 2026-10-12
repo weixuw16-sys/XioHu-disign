@@ -16,9 +16,14 @@ export interface Work {
   title: string;
   description: string;
   media: string;
-  mediaItems?: string[];
+  images?: string[];
   alt: string;
   featured: boolean;
+}
+
+export interface PortfolioUpload {
+  path: string;
+  sha: string;
 }
 
 function requiredEnv(name: string): string {
@@ -270,32 +275,63 @@ export function validateWork(work: unknown): asserts work is Work {
   if (typeof value.featured !== "boolean") {
     throw new Error("首页精选设置无效。");
   }
-  if (value.mediaItems !== undefined) {
-    if (
-      !Array.isArray(value.mediaItems) ||
-      value.mediaItems.length < 1 ||
-      value.mediaItems.length > 20 ||
-      new Set(value.mediaItems).size !== value.mediaItems.length ||
-      value.mediaItems.some((path) => typeof path !== "string")
-    ) {
-      throw new Error("作品图片数量必须为 1–20 张。");
-    }
-    if (value.type !== "image" || value.mediaItems[0] !== value.media) {
-      throw new Error("作品图片数据无效。");
-    }
-    for (const media of value.mediaItems) {
-      if (
-        !/^\.\/works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif)$/i.test(media)
-      ) {
-        throw new Error("作品图片路径无效。");
-      }
-    }
-  } else if (
-    typeof value.media !== "string" ||
-    !value.media
-  ) {
+  if (typeof value.media !== "string" || !value.media.trim()) {
     throw new Error("作品媒体路径无效。");
   }
+  if (value.images !== undefined) {
+    if (value.type !== "image" || !Array.isArray(value.images)) {
+      throw new Error("只有图片作品可以附加多张图片。");
+    }
+    if (value.images.length < 1 || value.images.length > 20) {
+      throw new Error("每个作品需要 1–20 张图片。");
+    }
+    if (
+      value.images.some((path) =>
+        typeof path !== "string" ||
+        !/^\.\/works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif)$/i.test(path)
+      ) ||
+      value.media !== value.images[0] ||
+      new Set(value.images).size !== value.images.length
+    ) {
+      throw new Error("作品图片路径或封面图片无效。");
+    }
+  }
+}
+
+function validateUploadPath(path: string): void {
+  if (
+    !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
+      path,
+    )
+  ) {
+    throw new Error("上传文件路径无效。");
+  }
+}
+
+export async function createPortfolioUploadBlob(
+  token: string,
+  path: string,
+  content: string,
+): Promise<string> {
+  validateUploadPath(path);
+  const raw = content.replace(/\s/g, "");
+  let size: number;
+  try {
+    size = atob(raw).length;
+  } catch {
+    throw new Error("上传文件的 Base64 数据无效。");
+  }
+  if (size === 0) {
+    throw new Error("上传文件不能为空。");
+  }
+  if (size > MAX_FILE_SIZE) {
+    throw new Error("文件超过 15 MB，请压缩后再上传。");
+  }
+  const blob = await githubApi<{ sha: string }>(token, "/git/blobs", {
+    method: "POST",
+    body: JSON.stringify({ content: raw, encoding: "base64" }),
+  });
+  return blob.sha;
 }
 
 export async function commitPortfolio(
@@ -305,7 +341,7 @@ export async function commitPortfolio(
   options: {
     filePath?: string;
     fileContent?: string;
-    files?: Array<{ path: string; content: string }>;
+    uploads?: PortfolioUpload[];
     removedPath?: string;
     removedPaths?: string[];
     message: string;
@@ -318,59 +354,43 @@ export async function commitPortfolio(
     content: `${JSON.stringify(updatedWorks, null, 2)}\n`,
   }];
 
-  const files = options.files || (
-    options.filePath && options.fileContent
-      ? [{ path: options.filePath, content: options.fileContent }]
-      : []
-  );
-  if (files.length > 20) throw new Error("一次最多处理 20 个作品文件。");
-  for (const file of files) {
-    const raw = file.content.replace(/\s/g, "");
-    let size: number;
-    try {
-      size = atob(raw).length;
-    } catch {
-      throw new Error("上传文件的 Base64 数据无效。");
+  const filePath = options.filePath;
+  const fileContent = options.fileContent;
+  if (filePath && fileContent) {
+    const sha = await createPortfolioUploadBlob(
+      token,
+      filePath,
+      fileContent,
+    );
+    tree.push({ path: filePath, mode: "100644", type: "blob", sha });
+  }
+
+  for (const upload of options.uploads || []) {
+    validateUploadPath(upload.path);
+    if (!/^[0-9a-f]{40}$/i.test(upload.sha)) {
+      throw new Error("待发布图片数据无效，请重新上传。");
     }
-    if (size > MAX_FILE_SIZE) {
-      throw new Error("文件超过 15 MB，请压缩后再上传。");
-    }
-    const path = file.path;
-    if (
-      !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
-        path,
-      )
-    ) {
-      throw new Error("上传文件路径无效。");
-    }
-    const blob = await githubApi<{ sha: string }>(token, "/git/blobs", {
-      method: "POST",
-      body: JSON.stringify({ content: raw, encoding: "base64" }),
+    tree.push({
+      path: upload.path,
+      mode: "100644",
+      type: "blob",
+      sha: upload.sha,
     });
-    tree.push({ path, mode: "100644", type: "blob", sha: blob.sha });
   }
 
   const removedPaths = [
     ...new Set([
-      ...(options.removedPaths || []),
       ...(options.removedPath ? [options.removedPath] : []),
+      ...(options.removedPaths || []),
     ]),
   ];
   for (const path of removedPaths) {
-    if (
-      !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
-        path,
-      )
-    ) {
-      throw new Error("待删除媒体路径无效。");
-    }
+    validateUploadPath(path);
     const relativePath = `./${path}`;
-    if (
-      !updatedWorks.some((work) =>
-        work.media === relativePath ||
-        work.mediaItems?.includes(relativePath)
-      )
-    ) {
+    const stillUsed = updatedWorks.some((work) =>
+      work.media === relativePath || work.images?.includes(relativePath)
+    );
+    if (!stillUsed) {
       tree.push({ path, mode: "100644", type: "blob", sha: null });
     }
   }

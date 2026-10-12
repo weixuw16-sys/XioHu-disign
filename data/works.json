@@ -1,5 +1,25 @@
 [
   {
+    "id": "work-bf0ef2d3-7ed7-4b2c-adcb-47662e054cb1",
+    "category": "photo",
+    "type": "image",
+    "title": "产品拍摄",
+    "description": "产品拍摄练习",
+    "media": "./works-assets/bf0ef2d3-7ed7-4b2c-adcb-47662e054cb1.png",
+    "alt": "产品拍摄",
+    "featured": true
+  },
+  {
+    "id": "work-96bd29a6-3e94-4930-8831-e3fe3d64c39f",
+    "category": "photo",
+    "type": "image",
+    "title": "赛车玩具",
+    "description": "赛车玩具拍摄",
+    "media": "./works-assets/96bd29a6-3e94-4930-8831-e3fe3d64c39f.png",
+    "alt": "赛车玩具",
+    "featured": true
+  },
+  {
     "id": "work-210fcea3-fa42-48bc-a11f-7b5dd3c82f84",
     "category": "motion",
     "type": "video",
@@ -27,7 +47,7 @@
     "description": "生活、环境与人物摄影作品。",
     "media": "./png/photograph/DSC0238.jpg",
     "alt": "春节摄影",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-original-character",
@@ -37,7 +57,7 @@
     "description": "原创角色与数字插画作品。",
     "media": "./png/%5B002566%5D.png",
     "alt": "原创角色设计",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-motion-design",
@@ -47,7 +67,7 @@
     "description": "动画、视频编辑与动态视觉作品。",
     "media": "./vidio/%E7%BB%98%E7%94%BB%E5%A7%94%E6%89%98_2.mp4",
     "alt": "动态视觉设计",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-product-photography",

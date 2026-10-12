@@ -1,7 +1,7 @@
 import { validateWork } from "./manager.ts";
 
 function imageWork(count: number) {
-  const mediaItems = Array.from(
+  const images = Array.from(
     { length: count },
     () => `./works-assets/${crypto.randomUUID()}.jpg`,
   );
@@ -11,8 +11,8 @@ function imageWork(count: number) {
     type: "image",
     title: "Test work",
     description: "",
-    media: mediaItems[0],
-    mediaItems,
+    media: images[0],
+    images,
     alt: "Test work",
     featured: false,
   };

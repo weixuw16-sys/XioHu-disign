@@ -41,6 +41,8 @@
         "抖音": "Douyin",
         "小红书": "Xiaohongshu",
         "关闭": "Close",
+        "上一张": "Previous image",
+        "下一张": "Next image",
         "ALL MY WORKS": "SELECTED WORKS",
         "全部": "All",
         "品牌设计": "Brand Design",

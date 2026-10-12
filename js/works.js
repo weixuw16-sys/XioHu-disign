@@ -10,11 +10,20 @@
     const loadError = document.getElementById("worksLoadError");
     const lightbox = document.getElementById("workLightbox");
     const lightboxInner = document.getElementById("lightboxInner");
+    const lightboxPrevious = document.getElementById("lightboxPrevious");
+    const lightboxNext = document.getElementById("lightboxNext");
+    const lightboxCounter = document.getElementById("lightboxCounter");
+    let activeGallery = [];
+    let activeImage = 0;
 
-    function mediaItems(work) {
-        return Array.isArray(work.mediaItems) && work.mediaItems.length
-            ? work.mediaItems
-            : [work.media];
+    function getImageGallery(work) {
+        const images = Array.isArray(work.images) && work.images.length
+            ? work.images
+            : work.type === "image" ? [work.media] : [];
+        return images.map((src, index) => ({
+            src,
+            alt: images.length > 1 ? `${work.alt || work.title} - ${index + 1}` : work.alt || work.title
+        }));
     }
 
     function makeMedia(work) {
@@ -36,24 +45,12 @@
             return video;
         }
 
-        const images = mediaItems(work);
-        if (images.length === 1) {
-            const image = document.createElement("img");
-            image.src = images[0];
-            image.alt = work.alt || work.title;
-            image.loading = "lazy";
-            return image;
-        }
-        const gallery = document.createElement("div");
-        gallery.className = "portfolio-image-gallery";
-        images.forEach((source, index) => {
-            const image = document.createElement("img");
-            image.src = source;
-            image.alt = `${work.alt || work.title} (${index + 1}/${images.length})`;
-            image.loading = "lazy";
-            gallery.appendChild(image);
-        });
-        return gallery;
+        const image = document.createElement("img");
+        const images = getImageGallery(work);
+        image.src = images[0]?.src || work.media;
+        image.alt = images[0]?.alt || work.alt || work.title;
+        image.loading = "lazy";
+        return image;
     }
 
     function renderWorks(works) {
@@ -66,9 +63,20 @@
             card.dataset.type = work.type;
 
             const media = document.createElement("div");
-            const hasGallery = work.type === "image" && mediaItems(work).length > 1;
-            media.className = `portfolio-media${work.category === "illustration" ? " illustration-media" : ""}${hasGallery ? " multi-image-media" : ""}`;
+            const images = getImageGallery(work);
+            const hasGallery = images.length > 1;
+            media.className = `portfolio-media${work.category === "illustration" ? " illustration-media" : ""}`;
             media.appendChild(makeMedia(work));
+            if (images.length) {
+                media.dataset.imageGallery = JSON.stringify(images);
+                if (images.length > 1) {
+                    const count = document.createElement("span");
+                    count.className = "media-count-badge";
+                    count.textContent = `▧ ${images.length}`;
+                    count.setAttribute("aria-label", `${images.length} 张图片，点击浏览`);
+                    media.appendChild(count);
+                }
+            }
 
             const overlay = document.createElement("div");
             overlay.className = "portfolio-overlay";
@@ -113,23 +121,42 @@
         });
     }
 
-    function openLightbox(media) {
+    function renderLightboxImage() {
         lightboxInner.replaceChildren();
-        let content;
-        if (media instanceof HTMLVideoElement) {
-            content = document.createElement("video");
-            content.src = media.currentSrc || media.querySelector("source")?.src || "";
-            content.controls = true;
-            content.autoplay = true;
-            content.loop = true;
-            content.playsInline = true;
-            content.play().catch(() => {});
-        } else {
-            content = document.createElement("img");
-            content.src = media.currentSrc || media.src;
-            content.alt = media.alt;
-        }
+        const content = document.createElement("img");
+        content.src = activeGallery[activeImage].src;
+        content.alt = activeGallery[activeImage].alt;
         lightboxInner.appendChild(content);
+        const hasMultipleImages = activeGallery.length > 1;
+        lightboxPrevious.hidden = !hasMultipleImages;
+        lightboxNext.hidden = !hasMultipleImages;
+        lightboxCounter.hidden = !hasMultipleImages;
+        lightboxCounter.textContent = hasMultipleImages
+            ? `${String(activeImage + 1).padStart(2, "0")} / ${String(activeGallery.length).padStart(2, "0")}`
+            : "";
+    }
+
+    function moveGallery(delta) {
+        if (activeGallery.length < 2) return;
+        activeImage = (activeImage + delta + activeGallery.length) % activeGallery.length;
+        renderLightboxImage();
+    }
+
+    function openLightbox(media) {
+        const mediaContainer = media.closest("[data-image-gallery]");
+        if (mediaContainer) {
+            try {
+                activeGallery = JSON.parse(mediaContainer.dataset.imageGallery);
+            } catch (error) {
+                console.error("Could not read the selected work's image gallery:", error);
+                activeGallery = [];
+            }
+        }
+        if (!activeGallery.length) {
+            activeGallery = [{ src: media.currentSrc || media.src, alt: media.alt }];
+        }
+        activeImage = 0;
+        renderLightboxImage();
         lightbox.classList.add("active");
         lightbox.setAttribute("aria-hidden", "false");
         document.body.style.overflow = "hidden";
@@ -139,6 +166,7 @@
         lightbox.classList.remove("active");
         lightbox.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
+        activeGallery = [];
         window.setTimeout(() => lightboxInner.replaceChildren(), 400);
     }
 
@@ -148,12 +176,27 @@
         if (media) openLightbox(media);
     });
     document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+    lightboxPrevious.addEventListener("click", () => moveGallery(-1));
+    lightboxNext.addEventListener("click", () => moveGallery(1));
     lightbox.addEventListener("click", event => {
         if (event.target === lightbox) closeLightbox();
     });
     lightboxInner.addEventListener("click", event => event.stopPropagation());
+    let swipeStartX = null;
+    lightboxInner.addEventListener("touchstart", event => {
+        swipeStartX = event.changedTouches[0].clientX;
+    }, { passive: true });
+    lightboxInner.addEventListener("touchend", event => {
+        if (swipeStartX === null) return;
+        const distance = event.changedTouches[0].clientX - swipeStartX;
+        if (Math.abs(distance) > 45) moveGallery(distance < 0 ? 1 : -1);
+        swipeStartX = null;
+    }, { passive: true });
     document.addEventListener("keydown", event => {
-        if (event.key === "Escape" && lightbox.classList.contains("active")) closeLightbox();
+        if (!lightbox.classList.contains("active")) return;
+        if (event.key === "Escape") closeLightbox();
+        if (event.key === "ArrowLeft") moveGallery(-1);
+        if (event.key === "ArrowRight") moveGallery(1);
     });
 
     fetch("./data/works.json", { cache: "no-store" })
