@@ -43,13 +43,11 @@ only; do not add the `repo` scope.
 
 Keep the OAuth app's client secret private. In the GitHub repository, open
 **Settings → Secrets and variables → Actions → New repository secret** and add
-the following repository secrets:
+these two repository secrets:
 
 - `SUPABASE_ACCESS_TOKEN`: create an access token from
   [Supabase Account → Access Tokens](https://supabase.com/dashboard/account/tokens).
 - `SUPABASE_PROJECT_REF`: `gttcyzjomilimqrrnrow`.
-- `OAUTH_CLIENT_ID`: the OAuth app's client ID.
-- `OAUTH_CLIENT_SECRET`: the OAuth app's client secret.
 
 Do not put the client secret, a GitHub token, the Supabase service-role key,
 or the Supabase access token in the website or chat. The Supabase Edge
@@ -82,18 +80,27 @@ This one-time SQL setup avoids exposing or repeatedly troubleshooting the
 database password. The Management API's SQL endpoint only permits read-only
 queries, so it cannot apply schema migrations.
 
-## 5. Deploy the Edge Functions
+## 5. Add OAuth credentials to Supabase
+
+Open [Supabase Edge Function secrets](https://supabase.com/dashboard/project/gttcyzjomilimqrrnrow/functions/secrets)
+and add these three secrets using the values from the GitHub OAuth App:
+
+- `GITHUB_CLIENT_ID`: the OAuth app's client ID.
+- `GITHUB_CLIENT_SECRET`: the OAuth app's client secret.
+- `APP_URL`: `https://weixuw16-sys.github.io/XioHu-disign/admin.html`
+
+These OAuth credentials are stored only by Supabase, not in the repository.
+
+## 6. Deploy the Edge Functions
 
 After the setup change is merged to `main`, open the repository's **Actions**
-tab and run **Deploy portfolio manager backend**. The workflow writes the OAuth
-credentials and exact admin-page URL as server secrets, then deploys both Edge
-Functions.
+tab and run **Deploy portfolio manager backend** to deploy both Edge Functions.
 
 The functions validate a random manager session ID themselves. `github-auth`
 uses OAuth state validation, and `github-manager` permits requests only from
 the published admin page and from a live server-side session.
 
-## 6. Connect the website
+## 7. Connect the website
 
 After the workflow succeeds, open the live
 [作品管理页](https://weixuw16-sys.github.io/XioHu-disign/admin.html) and select
