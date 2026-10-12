@@ -32,19 +32,6 @@ jobs:
           test -n "$OAUTH_CLIENT_ID" || (echo "::error::Add the OAUTH_CLIENT_ID repository secret." && exit 1)
           test -n "$OAUTH_CLIENT_SECRET" || (echo "::error::Add the OAUTH_CLIENT_SECRET repository secret." && exit 1)
 
-      - name: Apply database migration through Supabase Management API
-        env:
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: |
-          jq -n --rawfile query supabase/migrations/20261012000000_create_manager_sessions.sql \
-            '{query: $query, read_only: false}' |
-            curl --fail-with-body --silent --show-error \
-              --request POST \
-              --url "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query" \
-              --header "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-              --header "Content-Type: application/json" \
-              --data-binary @-
-
       - name: Set server-side OAuth secrets
         env:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
