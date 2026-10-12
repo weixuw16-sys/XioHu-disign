@@ -24,6 +24,9 @@
     const publishButton = document.getElementById("publishButton");
     const installButton = document.getElementById("installButton");
     const managedWorks = document.getElementById("managedWorks");
+    const selectedMediaPreview = document.getElementById("selectedMediaPreview");
+    const mediaInput = workForm.elements.media;
+    let selectedPreviewUrls = [];
 
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
@@ -129,6 +132,9 @@
         works.forEach(work => {
             const row = document.createElement("article");
             row.className = "managed-work";
+            const imagePaths = Array.isArray(work.images) && work.images.length
+                ? work.images
+                : work.type === "image" ? [work.media] : [];
             const mediaUrl = new URL(work.media, window.location.href).href;
             let preview;
             if (work.type === "video") {
@@ -147,7 +153,8 @@
             const title = document.createElement("strong");
             title.textContent = work.title;
             const details = document.createElement("span");
-            details.textContent = `${CATEGORY_LABELS[work.category] || work.category}${work.featured ? " · 首页精选" : ""}`;
+            const imageCount = imagePaths.length > 1 ? ` · ${imagePaths.length} 张图片` : "";
+            details.textContent = `${CATEGORY_LABELS[work.category] || work.category}${imageCount}${work.featured ? " · 首页精选" : ""}`;
             meta.append(title, details);
             const remove = document.createElement("button");
             remove.className = "delete-button";
@@ -175,6 +182,45 @@
         }
         return btoa(binary);
     }
+
+    function clearSelectedPreview() {
+        selectedPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+        selectedPreviewUrls = [];
+        selectedMediaPreview.replaceChildren();
+    }
+
+    function renderSelectedPreview() {
+        clearSelectedPreview();
+        const files = Array.from(mediaInput.files || []);
+        if (!files.length) return;
+
+        const list = document.createElement("span");
+        list.className = "selected-media-list";
+        files.forEach((file, index) => {
+            const item = document.createElement("span");
+            item.className = "selected-media-item";
+            if (file.type.startsWith("image/")) {
+                const preview = document.createElement("img");
+                const url = URL.createObjectURL(file);
+                selectedPreviewUrls.push(url);
+                preview.src = url;
+                preview.alt = "";
+                item.appendChild(preview);
+            } else {
+                const videoIcon = document.createElement("span");
+                videoIcon.className = "selected-video-icon";
+                videoIcon.textContent = "▶";
+                item.appendChild(videoIcon);
+            }
+            const label = document.createElement("span");
+            label.textContent = `${index + 1}. ${file.name}`;
+            item.appendChild(label);
+            list.appendChild(item);
+        });
+        selectedMediaPreview.append(list);
+    }
+
+    mediaInput.addEventListener("change", renderSelectedPreview);
 
     async function deleteWork(work) {
         if (!window.confirm(`确定删除「${work.title}」吗？这会从作品集移除此作品${work.media.startsWith("./works-assets/") ? "及其上传文件" : ""}。`)) return;
@@ -254,50 +300,80 @@
     workForm.addEventListener("submit", async event => {
         event.preventDefault();
         const formData = new FormData(workForm);
-        const file = formData.get("media");
-        const extension = file instanceof File ? getFileExtension(file) : "";
-        if (!extension) {
-            showStatus("请选择受支持的图片或 MP4/WebM 视频文件。", "error");
+        const files = Array.from(formData.getAll("media")).filter(file => file instanceof File && file.size > 0);
+        if (!files.length) {
+            showStatus("请选择至少一张图片或一个 MP4/WebM 视频文件。", "error");
             return;
         }
-        if (file.size > MAX_FILE_SIZE) {
-            showStatus("文件超过 15 MB，请压缩后再上传。", "error");
+        if (files.length > 20) {
+            showStatus("每个作品最多上传 20 张图片。", "error");
+            return;
+        }
+        const extensions = files.map(getFileExtension);
+        const hasUnsupportedFile = extensions.some(extension => !extension);
+        if (hasUnsupportedFile) {
+            showStatus("请选择受支持的 JPG、PNG、WebP、GIF 图片或 MP4/WebM 视频。", "error");
+            return;
+        }
+        if (files.some(file => file.size > MAX_FILE_SIZE)) {
+            showStatus("单个文件超过 15 MB，请压缩后再上传。", "error");
+            return;
+        }
+        const isVideo = files[0].type.startsWith("video/");
+        if (files.some(file => file.type.startsWith("video/") !== isVideo) || (isVideo && files.length > 1)) {
+            showStatus("图片可以多选；视频请单独选择一个文件。", "error");
             return;
         }
 
         const id = makeId();
         const title = String(formData.get("title")).trim();
+        const mediaPaths = files.map((file, index) => `./works-assets/${makeId()}.${extensions[index]}`);
         const work = {
             id: `work-${id}`,
             category: formData.get("category"),
-            type: file.type.startsWith("video/") ? "video" : "image",
+            type: isVideo ? "video" : "image",
             title,
             description: String(formData.get("description")).trim(),
-            media: `./works-assets/${id}.${extension}`,
+            media: mediaPaths[0],
             alt: title,
             featured: formData.get("featured") === "on"
         };
+        if (!isVideo) work.images = mediaPaths;
 
         publishButton.disabled = true;
-        showStatus("正在安全上传作品…");
         try {
-            const bytes = new Uint8Array(await file.arrayBuffer());
+            const uploads = [];
+            for (let index = 0; index < files.length; index += 1) {
+                showStatus(`正在安全上传图片（${index + 1}/${files.length}）…`);
+                const bytes = new Uint8Array(await files[index].arrayBuffer());
+                const path = mediaPaths[index].slice(2);
+                const uploaded = await backend("github-manager", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "upload",
+                        file: { path, content: encodeBase64(bytes) }
+                    })
+                });
+                if (typeof uploaded.sha !== "string" || !/^[0-9a-f]{40}$/i.test(uploaded.sha)) {
+                    throw new Error("服务器未能确认图片上传，请重试。");
+                }
+                uploads.push({ path, sha: uploaded.sha });
+            }
+            showStatus("正在发布作品资料…");
             const response = await backend("github-manager", {
                 method: "POST",
                 body: JSON.stringify({
                     action: "publish",
                     work,
-                    file: {
-                        path: work.media.slice(2),
-                        content: encodeBase64(bytes)
-                    }
+                    uploads
                 })
             });
             works = response.works;
             renderWorks();
             workForm.reset();
             workForm.elements.featured.checked = true;
-            showStatus("作品已发布。GitHub Pages 更新后，访客即可查看。", "success");
+            clearSelectedPreview();
+            showStatus(`作品已发布，共 ${files.length} 个${isVideo ? "视频" : "图片"}。GitHub Pages 更新后，访客即可查看。`, "success");
         } catch (error) {
             showStatus(error.message, "error");
         } finally {

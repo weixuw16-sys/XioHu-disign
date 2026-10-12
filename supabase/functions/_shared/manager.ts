@@ -16,8 +16,14 @@ export interface Work {
   title: string;
   description: string;
   media: string;
+  images?: string[];
   alt: string;
   featured: boolean;
+}
+
+export interface PortfolioUpload {
+  path: string;
+  sha: string;
 }
 
 function requiredEnv(name: string): string {
@@ -269,6 +275,62 @@ export function validateWork(work: unknown): asserts work is Work {
   if (typeof value.featured !== "boolean") {
     throw new Error("首页精选设置无效。");
   }
+  if (value.images !== undefined) {
+    if (value.type !== "image" || !Array.isArray(value.images)) {
+      throw new Error("只有图片作品可以附加多张图片。");
+    }
+    if (value.images.length < 1 || value.images.length > 20) {
+      throw new Error("每个作品需要 1–20 张图片。");
+    }
+    if (
+      value.images.some((path) =>
+        typeof path !== "string" ||
+        !/^\.\/works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif)$/i.test(path)
+      ) ||
+      value.media !== value.images[0] ||
+      new Set(value.images).size !== value.images.length
+    ) {
+      throw new Error("作品图片路径或封面图片无效。");
+    }
+  } else if (value.type === "image" && typeof value.media !== "string") {
+    throw new Error("作品封面图片无效。");
+  }
+}
+
+function validateUploadPath(path: string): void {
+  if (
+    !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
+      path,
+    )
+  ) {
+    throw new Error("上传文件路径无效。");
+  }
+}
+
+export async function createPortfolioUploadBlob(
+  token: string,
+  path: string,
+  content: string,
+): Promise<string> {
+  validateUploadPath(path);
+  const raw = content.replace(/\s/g, "");
+  let size: number;
+  try {
+    size = atob(raw).length;
+  } catch {
+    throw new Error("上传文件的 Base64 数据无效。");
+  }
+  if (size === 0) {
+    throw new Error("上传文件不能为空。");
+  }
+  if (size > MAX_FILE_SIZE) {
+    throw new Error("文件超过 15 MB，请压缩后再上传。");
+  }
+  const blob = await githubApi<{ sha: string }>(token, "/git/blobs", {
+    method: "POST",
+    body: JSON.stringify({ content: raw, encoding: "base64" }),
+  });
+  return blob.sha;
 }
 
 export async function commitPortfolio(
@@ -278,7 +340,9 @@ export async function commitPortfolio(
   options: {
     filePath?: string;
     fileContent?: string;
+    uploads?: PortfolioUpload[];
     removedPath?: string;
+    removedPaths?: string[];
     message: string;
   },
 ): Promise<void> {
@@ -289,49 +353,45 @@ export async function commitPortfolio(
     content: `${JSON.stringify(updatedWorks, null, 2)}\n`,
   }];
 
-  if (options.filePath && options.fileContent) {
-    const raw = options.fileContent.replace(/\s/g, "");
-    let size: number;
-    try {
-      size = atob(raw).length;
-    } catch {
-      throw new Error("上传文件的 Base64 数据无效。");
-    }
-    if (size > MAX_FILE_SIZE) {
-      throw new Error("文件超过 15 MB，请压缩后再上传。");
-    }
-    const path = options.filePath;
-    if (
-      !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
-        path,
-      )
-    ) {
-      throw new Error("上传文件路径无效。");
-    }
-    const blob = await githubApi<{ sha: string }>(token, "/git/blobs", {
-      method: "POST",
-      body: JSON.stringify({ content: raw, encoding: "base64" }),
-    });
-    tree.push({ path, mode: "100644", type: "blob", sha: blob.sha });
+  const filePath = options.filePath;
+  const fileContent = options.fileContent;
+  if (filePath && fileContent) {
+    const sha = await createPortfolioUploadBlob(
+      token,
+      filePath,
+      fileContent,
+    );
+    tree.push({ path: filePath, mode: "100644", type: "blob", sha });
   }
 
-  if (
-    options.removedPath &&
-    !updatedWorks.some((work) => work.media === `./${options.removedPath}`)
-  ) {
-    if (
-      !/^works-assets\/[0-9a-f-]{36}\.(?:jpg|png|webp|gif|mp4|webm)$/i.test(
-        options.removedPath,
-      )
-    ) {
-      throw new Error("待删除媒体路径无效。");
+  for (const upload of options.uploads || []) {
+    validateUploadPath(upload.path);
+    if (!/^[0-9a-f]{40}$/i.test(upload.sha)) {
+      throw new Error("待发布图片数据无效，请重新上传。");
     }
     tree.push({
-      path: options.removedPath,
+      path: upload.path,
       mode: "100644",
       type: "blob",
-      sha: null,
+      sha: upload.sha,
     });
+  }
+
+  const removedPaths = [
+    ...new Set([
+      ...(options.removedPath ? [options.removedPath] : []),
+      ...(options.removedPaths || []),
+    ]),
+  ];
+  for (const path of removedPaths) {
+    validateUploadPath(path);
+    const relativePath = `./${path}`;
+    const stillUsed = updatedWorks.some((work) =>
+      work.media === relativePath || work.images?.includes(relativePath)
+    );
+    if (!stillUsed) {
+      tree.push({ path, mode: "100644", type: "blob", sha: null });
+    }
   }
 
   const newTree = await githubApi<{ sha: string }>(token, "/git/trees", {
