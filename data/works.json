@@ -1,5 +1,15 @@
 [
   {
+    "id": "work-96bd29a6-3e94-4930-8831-e3fe3d64c39f",
+    "category": "photo",
+    "type": "image",
+    "title": "赛车玩具",
+    "description": "赛车玩具拍摄",
+    "media": "./works-assets/96bd29a6-3e94-4930-8831-e3fe3d64c39f.png",
+    "alt": "赛车玩具",
+    "featured": true
+  },
+  {
     "id": "work-210fcea3-fa42-48bc-a11f-7b5dd3c82f84",
     "category": "motion",
     "type": "video",
