@@ -52,24 +52,48 @@ the following repository secrets:
 - `OAUTH_CLIENT_SECRET`: the OAuth app's client secret.
 
 Do not put the client secret, a GitHub token, the Supabase service-role key,
-or the Supabase access token in the website or chat. The deployment applies the
-database migration through the Supabase Management API, so it does not need a
-database password. The Supabase Edge Functions receive `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY` from Supabase at runtime.
+or the Supabase access token in the website or chat. The Supabase Edge
+Functions receive `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from Supabase
+at runtime.
 
-## 4. Deploy the database migration and Edge Functions
+## 4. Create the private manager-session table
 
-After this setup change is merged to `main`, open the repository's **Actions**
-tab, run **Deploy portfolio manager backend**, and confirm the run succeeds.
-The workflow applies the migration through the Management API, writes the
-OAuth credentials and exact admin-page URL as server secrets, and deploys both
-Edge Functions.
+Open the Supabase project's **SQL Editor**, create a new query, and run:
+
+```sql
+create table if not exists public.manager_sessions (
+    id_hash text primary key,
+    github_token text not null,
+    github_login text not null,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now()
+);
+
+create index if not exists manager_sessions_expires_at_idx
+    on public.manager_sessions (expires_at);
+
+alter table public.manager_sessions enable row level security;
+
+revoke all on public.manager_sessions from anon, authenticated;
+grant all on public.manager_sessions to service_role;
+```
+
+This one-time SQL setup avoids exposing or repeatedly troubleshooting the
+database password. The Management API's SQL endpoint only permits read-only
+queries, so it cannot apply schema migrations.
+
+## 5. Deploy the Edge Functions
+
+After the setup change is merged to `main`, open the repository's **Actions**
+tab and run **Deploy portfolio manager backend**. The workflow writes the OAuth
+credentials and exact admin-page URL as server secrets, then deploys both Edge
+Functions.
 
 The functions validate a random manager session ID themselves. `github-auth`
 uses OAuth state validation, and `github-manager` permits requests only from
 the published admin page and from a live server-side session.
 
-## 5. Connect the website
+## 6. Connect the website
 
 After the workflow succeeds, open the live
 [作品管理页](https://weixuw16-sys.github.io/XioHu-disign/admin.html) and select
