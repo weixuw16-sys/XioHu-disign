@@ -49,8 +49,8 @@ the following repository secrets:
   [Supabase Account → Access Tokens](https://supabase.com/dashboard/account/tokens).
 - `SUPABASE_PROJECT_REF`: `gttcyzjomilimqrrnrow`.
 - `SUPABASE_DB_PASSWORD`: the database password you set when creating the project.
-- `GITHUB_CLIENT_ID`: the OAuth app's client ID.
-- `GITHUB_CLIENT_SECRET`: the OAuth app's client secret.
+- `OAUTH_CLIENT_ID`: the OAuth app's client ID.
+- `OAUTH_CLIENT_SECRET`: the OAuth app's client secret.
 
 Do not put the client secret, a GitHub token, the Supabase service-role key,
 database password, or the Supabase access token in the website or chat. The
