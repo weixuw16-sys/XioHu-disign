@@ -30,23 +30,34 @@
         <section class="admin-intro">
             <p class="eyebrow">PORTFOLIO MANAGEMENT</p>
             <h1>作品管理</h1>
-            <p>发布或移除作品。保存后会直接提交到 GitHub 仓库，GitHub Pages 随后自动更新。</p>
+            <p>用 GitHub 账号安全登录，即可发布或移除作品；授权由后端保管，不用每次复制 token。</p>
         </section>
 
         <p class="admin-status" id="adminStatus" role="status" aria-live="polite"></p>
 
         <section class="admin-panel auth-panel" id="authPanel">
-            <h2>连接 GitHub</h2>
-            <p>创建一个仅限 <strong>weixuw16-sys/XioHu-disign</strong> 仓库的 Fine-grained personal access token，并仅授予 <strong>Contents: Read and write</strong> 权限。token 只在此页面内存中使用，刷新或退出后会清除。</p>
-            <a class="token-help" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">创建 Fine-grained token ↗</a>
-            <form id="connectForm" class="connect-form">
-                <label for="githubToken">GitHub token</label>
-                <div class="token-row">
-                    <input id="githubToken" name="token" type="password" autocomplete="off" spellcheck="false" required>
-                    <button class="button button-dark" type="submit">连接</button>
+            <h2>连接管理后台</h2>
+            <p>首次使用时配置一次 Supabase 项目。下面的 Project URL 和 anon key 是公开配置，不是 GitHub 密钥；GitHub 授权令牌只保存在后端。</p>
+            <form id="configForm" class="connect-form">
+                <label for="supabaseUrl">Supabase Project URL</label>
+                <input id="supabaseUrl" name="supabaseUrl" type="url" inputmode="url" placeholder="https://你的项目编号.supabase.co" autocomplete="url" required>
+                <label for="supabaseAnonKey">Supabase anon / publishable key</label>
+                <input id="supabaseAnonKey" name="supabaseAnonKey" type="password" autocomplete="off" spellcheck="false" required>
+                <p class="form-hint">这两项会保存在当前设备上；不要把 service_role key 或 GitHub Client Secret 填在这里。</p>
+                <div class="form-actions">
+                    <button class="button button-dark" id="saveConfigButton" type="submit">保存连接设置</button>
                 </div>
-                <p class="form-hint">请勿使用 classic token，也不要把 token 分享给他人。</p>
             </form>
+            <button class="button button-dark github-login-button" id="githubLoginButton" type="button" hidden>使用 GitHub 登录</button>
+            <details class="setup-help">
+                <summary>首次设置 Supabase（一次性）</summary>
+                <ol>
+                    <li>创建一个免费的 Supabase 项目，并运行仓库中的 <code>supabase/migrations/20261012000000_create_manager_sessions.sql</code>。</li>
+                    <li>在 GitHub 创建 OAuth App，授权范围仅需公开仓库的 <code>public_repo</code>；回调地址使用 Supabase 函数 URL，详见 <a href="./supabase/SETUP.md">设置说明</a>。</li>
+                    <li>按设置说明部署 <code>github-auth</code> 和 <code>github-manager</code> 两个 Edge Functions，并在 Supabase 保存 GitHub OAuth 密钥。</li>
+                    <li>从 Supabase 项目设置复制 Project URL 和 anon / publishable key，填入上方并保存。</li>
+                </ol>
+            </details>
         </section>
 
         <section class="admin-workspace" id="adminWorkspace" hidden>
@@ -55,7 +66,7 @@
                     <p class="eyebrow">CONNECTED TO REPOSITORY</p>
                     <h2>管理作品</h2>
                 </div>
-                <button class="button button-light" id="disconnectButton" type="button">退出并清除 token</button>
+                <button class="button button-light" id="disconnectButton" type="button">退出登录</button>
             </div>
 
             <section class="admin-panel">

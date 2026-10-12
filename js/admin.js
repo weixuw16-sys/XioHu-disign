@@ -1,28 +1,28 @@
 (() => {
     const OWNER = "weixuw16-sys";
     const REPOSITORY = "XioHu-disign";
-    const BRANCH = "main";
     const MAX_FILE_SIZE = 15 * 1024 * 1024;
-    const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPOSITORY}`;
+    const CONFIG_KEY = "xiohu-manager-supabase-config";
+    const SESSION_PREFIX = "xiohu-manager-session:";
     const CATEGORY_LABELS = {
         brand: "品牌设计",
         illustration: "插画",
         photo: "摄影",
         motion: "动画 / 视频"
     };
-    let token = "";
+    let config = null;
+    let sessionId = "";
     let works = [];
 
     const status = document.getElementById("adminStatus");
     const authPanel = document.getElementById("authPanel");
     const workspace = document.getElementById("adminWorkspace");
-    const connectForm = document.getElementById("connectForm");
+    const configForm = document.getElementById("configForm");
+    const githubLoginButton = document.getElementById("githubLoginButton");
     const workForm = document.getElementById("workForm");
-    const connectButton = connectForm.querySelector("button[type=submit]");
     const publishButton = document.getElementById("publishButton");
     const installButton = document.getElementById("installButton");
     const managedWorks = document.getElementById("managedWorks");
-    let installPrompt = null;
 
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
@@ -38,18 +38,17 @@
 
     if (isInstalled()) installButton.hidden = true;
 
+    let installPrompt = null;
     window.addEventListener("beforeinstallprompt", event => {
         event.preventDefault();
         installPrompt = event;
         installButton.hidden = false;
     });
-
     window.addEventListener("appinstalled", () => {
         installPrompt = null;
         installButton.hidden = true;
         showStatus("作品管理应用已安装到主屏幕。", "success");
     });
-
     installButton.addEventListener("click", async () => {
         if (installPrompt) {
             installPrompt.prompt();
@@ -57,12 +56,10 @@
             installPrompt = null;
             return;
         }
-
         if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !isInstalled()) {
             showStatus("在 Safari 中点“分享”按钮，再选择“添加到主屏幕”。");
             return;
         }
-
         showStatus("在浏览器菜单中选择“安装应用”或“添加到主屏幕”。");
     });
 
@@ -72,14 +69,39 @@
         status.classList.add("visible");
     }
 
-    async function api(path, options = {}) {
-        const response = await fetch(`${API_ROOT}${path}`, {
+    function readConfig() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(CONFIG_KEY) || "null");
+            if (!saved || typeof saved.url !== "string" || typeof saved.anonKey !== "string") return null;
+            const parsedUrl = new URL(saved.url);
+            if (parsedUrl.protocol !== "https:" || parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash) return null;
+            if (!saved.anonKey.trim()) return null;
+            return { url: parsedUrl.origin, anonKey: saved.anonKey.trim() };
+        } catch {
+            return null;
+        }
+    }
+
+    function sessionStorageKey() {
+        return `${SESSION_PREFIX}${config.url}`;
+    }
+
+    function clearSession() {
+        sessionId = "";
+        if (config) localStorage.removeItem(sessionStorageKey());
+    }
+
+    function getFunctionUrl(name) {
+        return `${config.url}/functions/v1/${name}`;
+    }
+
+    async function backend(name, options = {}) {
+        const response = await fetch(getFunctionUrl(name), {
             ...options,
             headers: {
-                Accept: "application/vnd.github+json",
-                Authorization: `Bearer ${token}`,
-                "X-GitHub-Api-Version": "2022-11-28",
+                apikey: config.anonKey,
                 ...(options.body ? { "Content-Type": "application/json" } : {}),
+                ...(sessionId ? { "x-manager-session": sessionId } : {}),
                 ...options.headers
             }
         });
@@ -91,46 +113,19 @@
             body = {};
         }
         if (!response.ok) {
-            const reason = body.message || response.statusText || "未知错误";
-            const method = options.method || "GET";
-            const endpoint = `${method} ${path.split("?")[0]}`;
-            const permissionHelp = response.status === 403
-                ? path.includes("/git/refs/")
-                    ? "请检查 Contents: Read and write 权限，并确认 main 分支规则允许直接推送。"
-                    : "请检查 token 是否授权了 XioHu-disign 仓库和 Contents: Read and write 权限。"
-                : "";
-            throw new Error(`GitHub API (${response.status}) [${endpoint}]: ${reason}${permissionHelp ? ` ${permissionHelp}` : ""}`);
+            throw new Error(body.error || `管理服务请求失败 (${response.status})。请检查 Supabase Functions 部署和项目设置。`);
         }
         return body;
     }
 
-    function decodeBase64Utf8(value) {
-        const binary = atob(value.replace(/\s/g, ""));
-        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-        return new TextDecoder().decode(bytes);
-    }
-
-    function encodeBase64(bytes) {
-        let binary = "";
-        const chunkSize = 0x8000;
-        for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-            binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-        }
-        return btoa(binary);
-    }
-
-    async function getRemoteState() {
-        showStatus("正在读取 main 分支…");
-        const reference = await api(`/git/ref/heads/${encodeURIComponent(BRANCH)}`);
-        const commitSha = reference.object.sha;
-        const commit = await api(`/git/commits/${commitSha}`);
-        const result = await api(`/contents/data/works.json?ref=${encodeURIComponent(commitSha)}`);
-        if (!result.content || result.encoding !== "base64") {
-            throw new Error("无法读取 data/works.json。请确认 token 拥有该仓库的 Contents 读取权限。");
-        }
-        const parsed = JSON.parse(decodeBase64Utf8(result.content));
-        if (!Array.isArray(parsed)) throw new Error("作品数据格式无效，无法继续操作。");
-        return { works: parsed, commitSha, treeSha: commit.tree.sha };
+    async function loadWorks() {
+        showStatus("正在安全连接作品仓库…");
+        const response = await backend("github-manager", {
+            method: "POST",
+            body: JSON.stringify({ action: "list" })
+        });
+        if (!Array.isArray(response.works)) throw new Error("服务器返回的作品数据格式无效。");
+        return response.works;
     }
 
     function renderWorks() {
@@ -176,78 +171,35 @@
         });
     }
 
-    function setConnected(remoteWorks) {
-        works = remoteWorks;
+    function setConnected(nextWorks) {
+        works = nextWorks;
         authPanel.hidden = true;
         workspace.hidden = false;
         renderWorks();
-        showStatus("已连接。提交会直接写入 main 分支，GitHub Pages 部署需要片刻完成。", "success");
+        showStatus("已通过 GitHub 安全登录。下次打开此设备无需再次登录，登录会话 30 天后过期。", "success");
     }
 
-    async function commitWorks(updatedWorks, state, { file, removedMedia, removedTitle } = {}) {
-        const tree = [
-            {
-                path: "data/works.json",
-                mode: "100644",
-                type: "blob",
-                content: `${JSON.stringify(updatedWorks, null, 2)}\n`
-            }
-        ];
-
-        if (file) {
-            showStatus("正在上传媒体文件…");
-            const blob = await api("/git/blobs", {
-                method: "POST",
-                body: JSON.stringify({
-                    content: encodeBase64(new Uint8Array(await file.file.arrayBuffer())),
-                    encoding: "base64"
-                })
-            });
-            tree.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
+    function encodeBase64(bytes) {
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
         }
-
-        if (removedMedia && !updatedWorks.some(work => work.media === removedMedia)) {
-            const path = removedMedia.startsWith("./") ? removedMedia.slice(2) : removedMedia;
-            if (path.startsWith("works-assets/")) {
-                tree.push({ path, mode: "100644", type: "blob", sha: null });
-            }
-        }
-
-        showStatus("正在创建作品数据提交…");
-        const newTree = await api("/git/trees", {
-            method: "POST",
-            body: JSON.stringify({ base_tree: state.treeSha, tree })
-        });
-        const commit = await api("/git/commits", {
-            method: "POST",
-            body: JSON.stringify({
-                message: file ? `Add portfolio work: ${file.title}` : `Remove portfolio work: ${removedTitle}`,
-                tree: newTree.sha,
-                parents: [state.commitSha]
-            })
-        });
-        showStatus("正在更新 main 分支…");
-        await api(`/git/refs/heads/${encodeURIComponent(BRANCH)}`, {
-            method: "PATCH",
-            body: JSON.stringify({ sha: commit.sha, force: false })
-        });
+        return btoa(binary);
     }
 
     async function deleteWork(work) {
         if (!window.confirm(`确定删除「${work.title}」吗？这会从作品集移除此作品${work.media.startsWith("./works-assets/") ? "及其上传文件" : ""}。`)) return;
-        showStatus("正在删除并提交到 GitHub…");
+        showStatus("正在安全提交删除操作…");
         managedWorks.querySelectorAll("button").forEach(button => { button.disabled = true; });
         try {
-            const state = await getRemoteState();
-            const currentWorks = state.works;
-            const updatedWorks = currentWorks.filter(item => item.id !== work.id);
-            if (updatedWorks.length === currentWorks.length) {
-                throw new Error("这个作品已在仓库中被移除，请刷新页面后重试。");
-            }
-            await commitWorks(updatedWorks, state, { removedMedia: work.media, removedTitle: work.title });
-            works = updatedWorks;
+            const result = await backend("github-manager", {
+                method: "POST",
+                body: JSON.stringify({ action: "delete", id: work.id })
+            });
+            works = result.works;
             renderWorks();
-            showStatus("作品已删除并提交。GitHub Pages 更新后，访客将看不到该作品。", "success");
+            showStatus("作品已删除。GitHub Pages 更新后，访客将看不到该作品。", "success");
         } catch (error) {
             showStatus(error.message, "error");
             renderWorks();
@@ -270,23 +222,83 @@
         return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
-    connectForm.addEventListener("submit", async event => {
-        event.preventDefault();
-        token = document.getElementById("githubToken").value.trim();
-        connectButton.disabled = true;
-        showStatus("正在验证 token 并读取作品…");
+    function saveConfig() {
+        const urlInput = document.getElementById("supabaseUrl").value.trim();
+        const anonKey = document.getElementById("supabaseAnonKey").value.trim();
         try {
-            const state = await getRemoteState();
-            setConnected(state.works);
-            document.getElementById("githubToken").value = "";
+            const parsedUrl = new URL(urlInput);
+            if (parsedUrl.protocol !== "https:" || parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash) {
+                throw new Error("请输入 Supabase 项目根地址，例如 https://abc123.supabase.co。");
+            }
+            if (!anonKey) throw new Error("请输入 Supabase anon / publishable key。");
+            if (config && config.url !== parsedUrl.origin) {
+                localStorage.removeItem(sessionStorageKey());
+                sessionId = "";
+            }
+            config = { url: parsedUrl.origin, anonKey };
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+            githubLoginButton.hidden = false;
+            showStatus("连接设置已保存在此设备。现在可使用 GitHub 登录。", "success");
+            return true;
         } catch (error) {
-            token = "";
-            document.getElementById("githubToken").value = "";
-            showStatus(error.message, "error");
-        } finally {
-            connectButton.disabled = false;
+            showStatus(error.message || "Supabase Project URL 无效。", "error");
+            return false;
         }
+    }
+
+    config = readConfig();
+    if (config) {
+        document.getElementById("supabaseUrl").value = config.url;
+        document.getElementById("supabaseAnonKey").value = config.anonKey;
+        githubLoginButton.hidden = false;
+    }
+
+    const oauthError = new URLSearchParams(window.location.search).get("auth_error");
+    if (oauthError) {
+        history.replaceState(null, "", window.location.pathname);
+        const messages = {
+            github_access_denied: "你取消了 GitHub 授权。",
+            github_account_not_allowed: `请使用仓库所有者 GitHub 账号 ${OWNER} 登录。`,
+            github_repository_access_denied: `GitHub 账号没有 ${OWNER}/${REPOSITORY} 的写入权限。`,
+            oauth_callback_failed: "GitHub 登录未完成，请重新尝试；如果仍失败，请检查 Supabase OAuth 设置。"
+        };
+        showStatus(messages[oauthError] || "GitHub 登录失败，请重新尝试。", "error");
+    }
+
+    const callbackParams = new URLSearchParams(window.location.hash.slice(1));
+    const callbackSession = callbackParams.get("manager_session");
+    if (callbackSession) {
+        sessionId = callbackSession;
+        localStorage.setItem(sessionStorageKey(), sessionId);
+        history.replaceState(null, "", window.location.pathname);
+        showStatus("GitHub 登录成功，正在载入作品…", "success");
+    } else if (config) {
+        sessionId = localStorage.getItem(sessionStorageKey()) || "";
+    }
+
+    configForm.addEventListener("submit", event => {
+        event.preventDefault();
+        saveConfig();
     });
+
+    githubLoginButton.addEventListener("click", () => {
+        if (!config && !saveConfig()) return;
+        const url = getFunctionUrl("github-auth");
+        window.location.assign(`${url}?action=start`);
+    });
+
+    async function restoreSession() {
+        if (!config || !sessionId) return;
+        try {
+            const nextWorks = await loadWorks();
+            setConnected(nextWorks);
+        } catch (error) {
+            clearSession();
+            showStatus(`登录会话无效或已过期：${error.message} 请重新使用 GitHub 登录。`, "error");
+        }
+    }
+
+    restoreSession();
 
     workForm.addEventListener("submit", async event => {
         event.preventDefault();
@@ -303,35 +315,34 @@
         }
 
         const id = makeId();
-        const filename = `${id}.${extension}`;
+        const title = String(formData.get("title")).trim();
         const work = {
             id: `work-${id}`,
             category: formData.get("category"),
             type: file.type.startsWith("video/") ? "video" : "image",
-            title: String(formData.get("title")).trim(),
+            title,
             description: String(formData.get("description")).trim(),
-            media: `./works-assets/${filename}`,
-            alt: String(formData.get("title")).trim(),
+            media: `./works-assets/${id}.${extension}`,
+            alt: title,
             featured: formData.get("featured") === "on"
         };
 
         publishButton.disabled = true;
-        showStatus("准备发布作品…");
+        showStatus("正在安全上传作品…");
         try {
-            const state = await getRemoteState();
-            const currentWorks = state.works;
-            let featuredCount = work.featured ? 1 : 0;
-            const retainedWorks = currentWorks.map(item => {
-                if (!item.featured) return item;
-                if (featuredCount < 4) {
-                    featuredCount += 1;
-                    return item;
-                }
-                return { ...item, featured: false };
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            const response = await backend("github-manager", {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "publish",
+                    work,
+                    file: {
+                        path: work.media.slice(2),
+                        content: encodeBase64(bytes)
+                    }
+                })
             });
-            const updatedWorks = [work, ...retainedWorks];
-            await commitWorks(updatedWorks, state, { file: { file, path: `works-assets/${filename}`, title: work.title } });
-            works = updatedWorks;
+            works = response.works;
             renderWorks();
             workForm.reset();
             workForm.elements.featured.checked = true;
@@ -343,12 +354,21 @@
         }
     });
 
-    document.getElementById("disconnectButton").addEventListener("click", () => {
-        token = "";
+    document.getElementById("disconnectButton").addEventListener("click", async () => {
+        try {
+            await backend("github-auth", {
+                method: "POST",
+                body: JSON.stringify({ action: "logout" })
+            });
+        } catch (error) {
+            console.error("Could not revoke the server-side manager session:", error);
+        }
+        clearSession();
         works = [];
         workspace.hidden = true;
         authPanel.hidden = false;
+        githubLoginButton.hidden = !config;
         managedWorks.replaceChildren();
-        showStatus("已退出，token 已从页面内存清除。");
+        showStatus("已退出登录，本设备会话已清除。");
     });
 })();

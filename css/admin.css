@@ -151,6 +151,11 @@ textarea {
     color: var(--ink);
 }
 
+.connect-form {
+    display: grid;
+    gap: 12px;
+}
+
 .connect-form > label,
 .work-form > label {
     display: block;
@@ -162,6 +167,37 @@ textarea {
 .token-row {
     display: flex;
     gap: 10px;
+}
+
+.connect-form .form-actions {
+    margin: 6px 0 18px;
+}
+
+.github-login-button {
+    margin: 4px 0 24px;
+}
+
+.setup-help {
+    margin-top: 28px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+}
+
+.setup-help summary {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.setup-help ol {
+    padding-left: 22px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.setup-help a {
+    color: var(--ink);
 }
 
 input:not([type="checkbox"]),

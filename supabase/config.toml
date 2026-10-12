@@ -1,0 +1,5 @@
+[functions.github-auth]
+verify_jwt = false
+
+[functions.github-manager]
+verify_jwt = false
