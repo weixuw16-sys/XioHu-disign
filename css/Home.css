@@ -2355,6 +2355,100 @@ button:focus-visible {
 
     }
 
+    .work-image,
+    .photo-item {
+        position: relative;
+    }
+
+    .media-count-badge {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 11px;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 999px;
+        background: rgba(25, 24, 22, 0.68);
+        color: #fff;
+        font-size: 12px;
+        line-height: 1;
+        backdrop-filter: blur(12px);
+        pointer-events: none;
+    }
+
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        z-index: 10001;
+        display: grid;
+        width: 52px;
+        height: 52px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 36px;
+        line-height: 1;
+        cursor: pointer;
+        transform: translateY(-50%);
+        transition: background 0.25s ease, transform 0.25s ease;
+    }
+
+    .lightbox-nav:hover {
+        background: rgba(200, 100, 75, 0.85);
+        transform: translateY(-50%) scale(1.06);
+    }
+
+    .lightbox-nav[hidden],
+    .lightbox-counter[hidden] {
+        display: none;
+    }
+
+    .lightbox-prev {
+        left: clamp(16px, 4vw, 54px);
+    }
+
+    .lightbox-next {
+        right: clamp(16px, 4vw, 54px);
+    }
+
+    .lightbox-counter {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        z-index: 10001;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 3px;
+        transform: translateX(-50%);
+    }
+
+    @media (max-width: 600px) {
+        .lightbox {
+            padding: 18px 54px;
+        }
+
+        .lightbox-nav {
+            width: 40px;
+            height: 40px;
+            font-size: 29px;
+        }
+
+        .lightbox-prev {
+            left: 10px;
+        }
+
+        .lightbox-next {
+            right: 10px;
+        }
+    }
+
 
     .more-button a:hover {
 
