@@ -1,5 +1,15 @@
 [
   {
+    "id": "work-44a9cd17-1034-457c-a97c-0821e7ea56b2",
+    "category": "brand",
+    "type": "image",
+    "title": "产品拍摄",
+    "description": "产品拍摄练习",
+    "media": "./works-assets/44a9cd17-1034-457c-a97c-0821e7ea56b2.png",
+    "alt": "产品拍摄",
+    "featured": true
+  },
+  {
     "id": "work-96bd29a6-3e94-4930-8831-e3fe3d64c39f",
     "category": "photo",
     "type": "image",
@@ -37,7 +47,7 @@
     "description": "生活、环境与人物摄影作品。",
     "media": "./png/photograph/DSC0238.jpg",
     "alt": "春节摄影",
-    "featured": true
+    "featured": false
   },
   {
     "id": "work-original-character",
