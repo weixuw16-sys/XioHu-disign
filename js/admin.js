@@ -2,6 +2,7 @@
     const OWNER = "weixuw16-sys";
     const REPOSITORY = "XioHu-disign";
     const MAX_FILE_SIZE = 15 * 1024 * 1024;
+    const MAX_IMAGE_COUNT = 20;
     const config = {
         url: "https://gttcyzjomilimqrrnrow.supabase.co",
         anonKey: "sb_publishable_Xw21vpSBcy-Y5hU5nd10Yw_6vzitsxi"
@@ -223,7 +224,12 @@
     mediaInput.addEventListener("change", renderSelectedPreview);
 
     async function deleteWork(work) {
-        if (!window.confirm(`确定删除「${work.title}」吗？这会从作品集移除此作品${work.media.startsWith("./works-assets/") ? "及其上传文件" : ""}。`)) return;
+        const mediaPaths = [
+            work.media,
+            ...(Array.isArray(work.images) ? work.images : [])
+        ];
+        const uploadedItems = mediaPaths.filter(path => path.startsWith("./works-assets/"));
+        if (!window.confirm(`确定删除「${work.title}」吗？这会从作品集移除此作品${uploadedItems.length ? `及其 ${uploadedItems.length} 个上传文件` : ""}。`)) return;
         showStatus("正在安全提交删除操作…");
         managedWorks.querySelectorAll("button").forEach(button => { button.disabled = true; });
         try {
@@ -300,12 +306,17 @@
     workForm.addEventListener("submit", async event => {
         event.preventDefault();
         const formData = new FormData(workForm);
-        const files = Array.from(formData.getAll("media")).filter(file => file instanceof File && file.size > 0);
+        const selectedFiles = Array.from(formData.getAll("media")).filter(file => file instanceof File);
+        const files = selectedFiles.filter(file => file.size > 0);
+        if (files.length !== selectedFiles.length) {
+            showStatus("不能上传空文件，请重新选择图片或视频。", "error");
+            return;
+        }
         if (!files.length) {
             showStatus("请选择至少一张图片或一个 MP4/WebM 视频文件。", "error");
             return;
         }
-        if (files.length > 20) {
+        if (files.length > MAX_IMAGE_COUNT) {
             showStatus("每个作品最多上传 20 张图片。", "error");
             return;
         }

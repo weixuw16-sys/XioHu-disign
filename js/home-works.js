@@ -80,8 +80,10 @@
         works.filter(work => work.category === "photo").slice(0, 2).forEach((work, index) => {
             const card = document.createElement("div");
             card.className = `photo-item reveal show${index === 0 ? " photo-large" : ""}`;
-            const image = createMedia(work);
+            const image = document.createElement("img");
+            image.src = getImageGallery(work)[0]?.src || work.media;
             image.alt = `摄影作品 ${String(index + 1).padStart(2, "0")}`;
+            image.loading = "lazy";
             const gallery = getImageGallery(work);
             if (gallery.length) card.dataset.imageGallery = JSON.stringify(gallery);
             card.appendChild(image);
