@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fff7fb">
+    <title>我们要一直在一起呀</title>
+    <link rel="manifest" href="./love-app.webmanifest">
+    <link rel="icon" href="./icons/love-app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/love-app-icon-180.png">
+    <link rel="stylesheet" href="./css/love.css">
+</head>
+<body class="love-page success-page">
+    <canvas class="particle-layer" id="particleLayer" aria-hidden="true"></canvas>
+    <header class="love-nav">
+        <a class="love-brand" href="./couple-space.html" aria-label="回到我们的小小宇宙">
+            <span class="brand-heart" aria-hidden="true">♥</span>
+            <span>给你的一封小情书</span>
+        </a>
+        <a class="nav-memory" href="./couple-space.html">我们的空间 <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main class="love-main">
+        <div class="floating-heart heart-one" aria-hidden="true">♥</div>
+        <div class="floating-heart heart-two" aria-hidden="true">♡</div>
+        <div class="floating-heart heart-three" aria-hidden="true">✦</div>
+
+        <section class="letter-card success-card" aria-labelledby="success-title">
+            <div class="letter-topline"><span>OUR STORY CONTINUES</span><span>♡ ALWAYS ♡</span></div>
+            <div class="celebration-art" aria-hidden="true">
+                <span class="celebrate-star star-left">✦</span>
+                <span class="celebrate-heart">♥</span>
+                <span class="celebrate-star star-right">✧</span>
+                <span class="celebrate-mini mini-left">♡</span>
+                <span class="celebrate-mini mini-right">♡</span>
+            </div>
+            <p class="eyebrow">叮！幸福已确认</p>
+            <h1 id="success-title">好耶！<span>我们要一直在一起呀</span></h1>
+            <p class="letter-copy">虽然我们从 2026 年 1 月 7 日就已经在一起，<br>但今天开始，这份喜欢又多了一枚正式认证章！</p>
+            <div class="day-counter" aria-live="polite">
+                <span class="counter-label">我们已经在一起</span>
+                <span class="counter-number" id="dayCount">—</span>
+                <span class="counter-label">啦，每一天都还想和你一起过 ♡</span>
+            </div>
+            <p class="together-date">正式在一起的日子：<time id="togetherDate" datetime="2026-01-07">2026 年 1 月 7 日</time></p>
+            <a class="primary-link" href="./couple-space.html">进入我们的专属空间 <span aria-hidden="true">→</span></a>
+            <p class="letter-signoff">下一页开始，慢慢写下我们的以后 <span>♡</span></p>
+        </section>
+
+        <p class="page-footnote">从 2026 年 1 月 7 日起，喜欢你的每一天都算数 <span aria-hidden="true">✿</span></p>
+    </main>
+    <script src="./js/couple-client.js"></script>
+    <script src="./js/love.js"></script>
+</body>
+</html>

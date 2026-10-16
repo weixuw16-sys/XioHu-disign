@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fff7fb">
+    <meta name="description" content="一封只想亲手交给你的可爱小情书。">
+    <title>给你的一封小情书</title>
+    <link rel="manifest" href="./love-app.webmanifest">
+    <link rel="icon" href="./icons/love-app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/love-app-icon-180.png">
+    <link rel="stylesheet" href="./css/love.css">
+</head>
+<body class="love-page">
+    <canvas class="particle-layer" id="particleLayer" aria-hidden="true"></canvas>
+    <header class="love-nav">
+        <a class="love-brand" href="./confession.html" aria-label="回到情书">
+            <span class="brand-heart" aria-hidden="true">♥</span>
+            <span>给你的一封小情书</span>
+        </a>
+        <a class="nav-memory" href="./setup.html">回到开始 <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main class="love-main">
+        <div class="floating-heart heart-one" aria-hidden="true">♥</div>
+        <div class="floating-heart heart-two" aria-hidden="true">♡</div>
+        <div class="floating-heart heart-three" aria-hidden="true">✦</div>
+
+        <section class="letter-card" aria-labelledby="question-title">
+            <div class="letter-topline"><span>TO MY FAVORITE PERSON</span><span>♡ 2026.01.07</span></div>
+            <div class="love-art" aria-hidden="true">
+                <span class="art-sparkle sparkle-one">✦</span>
+                <span class="art-sparkle sparkle-two">✧</span>
+                <div class="heart-stamp">♥</div>
+                <span class="art-caption">you + me</span>
+            </div>
+            <p class="eyebrow">偷偷准备了好久的话</p>
+            <h1 id="question-title"><span id="confessionHeading">有一段心里话，想认真告诉你。</span></h1>
+            <p class="letter-copy" id="confessionCopy">从 2026 年 1 月 7 日开始，你就成了我生活里最特别的人。今天想再认真问你一次。</p>
+            <p class="big-question" id="confessionQuestion">你愿意继续和我一起走下去吗？</p>
+
+            <div class="answer-area">
+                <a class="answer-yes" id="yesButton" href="./confession-success.html">愿意呀！<span aria-hidden="true">♥</span></a>
+                <button class="answer-no" id="noButton" type="button">再想想</button>
+            </div>
+            <p class="plea-message" id="pleaMessage" aria-live="polite">选哪个都可以，我会在这里等你 ♡</p>
+            <p class="letter-signoff">永远站在你这边的我 <span>♡</span></p>
+        </section>
+
+        <p class="page-footnote">用一点点勇气，收藏我们已经开始的故事 <span aria-hidden="true">✿</span></p>
+    </main>
+    <script src="./js/couple-client.js"></script>
+    <script src="./js/love.js"></script>
+</body>
+</html>

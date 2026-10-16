@@ -1,14 +1,35 @@
-const CACHE_NAME = "xiohu-works-v7";
+const CACHE_NAME = "xiohu-works-v8";
 const APP_SHELL = [
     "./admin.html",
     "./css/admin.css",
     "./js/admin.js",
     "./data/works.json",
     "./manifest.webmanifest",
+    "./couple-space.html",
+    "./confession.html",
+    "./confession-success.html",
+    "./wake.html",
+    "./memories.html",
+    "./games.html",
+    "./css/love.css",
+    "./js/love.js",
+    "./love-app.webmanifest",
+    "./icons/love-app-icon.svg",
+    "./icons/love-app-icon-180.png",
+    "./icons/love-app-icon-192.png",
+    "./icons/love-app-icon-512.png",
     "./icons/app-icon-192.png",
     "./icons/app-icon-512.png",
     "./icons/apple-touch-icon.png"
 ];
+const LOVE_PAGES = [
+    "./couple-space.html",
+    "./confession.html",
+    "./confession-success.html",
+    "./wake.html",
+    "./memories.html",
+    "./games.html"
+].map(path => new URL(path, self.location.href).href);
 
 self.addEventListener("install", event => {
     event.waitUntil(
@@ -77,6 +98,10 @@ self.addEventListener("fetch", event => {
                 const cache = await caches.open(CACHE_NAME);
                 const cached = await cache.match(request);
                 if (cached) return cached;
+                if (LOVE_PAGES.includes(url.href)) {
+                    const coupleHome = await cache.match("./couple-space.html");
+                    if (coupleHome) return coupleHome;
+                }
                 const appPage = await cache.match("./admin.html");
                 if (appPage) return appPage;
                 throw error;

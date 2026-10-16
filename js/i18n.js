@@ -8,6 +8,7 @@
 
     const translations = {
         "首页": "Home",
+        "给你的一封小情书": "A Little Love Letter",
         "关于我": "About Me",
         "我的能力": "Skills",
         "我的作品": "Works",

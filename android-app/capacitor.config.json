@@ -1,0 +1,23 @@
+{
+  "appId": "com.xiohu.littleuniverse",
+  "appName": "我们的小小宇宙",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#fffafd"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#fff7fb"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#fff7fb",
+      "showSpinner": false
+    }
+  }
+}

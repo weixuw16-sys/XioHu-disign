@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fff7fb">
+    <title>我们的生活记录</title>
+    <link rel="manifest" href="./love-app.webmanifest">
+    <link rel="icon" href="./icons/love-app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/love-app-icon-180.png">
+    <link rel="stylesheet" href="./css/love.css">
+</head>
+<body class="love-page memories-page">
+    <canvas class="particle-layer" id="particleLayer" aria-hidden="true"></canvas>
+    <header class="love-nav">
+        <a class="love-brand" href="./confession.html" aria-label="回到情书">
+            <span class="brand-heart" aria-hidden="true">♥</span>
+            <span>给你的一封小情书</span>
+        </a>
+        <a class="nav-memory" href="./couple-space.html">我们的空间 <span aria-hidden="true">♡</span></a>
+    </header>
+
+    <main class="memories-main">
+        <section class="memories-heading">
+            <p class="eyebrow">OUR LITTLE MOMENTS</p>
+            <h1>我们的<span>小日常</span></h1>
+            <p>一起吃过的饭、路上的风景，还有每一个想珍藏的瞬间。</p>
+        </section>
+
+        <section class="memory-composer" aria-labelledby="memory-form-title">
+            <h2 id="memory-form-title">分享一条新动态 <span aria-hidden="true">♡</span></h2>
+            <form id="memoryForm">
+                <label for="memoryDate">动态日期</label>
+                <input id="memoryDate" name="date" type="date" required>
+                <label class="visually-hidden" for="memoryText">动态内容</label>
+                <textarea id="memoryText" name="text" rows="3" maxlength="1000" placeholder="今天发生了什么开心的小事？"></textarea>
+                <div class="media-picker">
+                    <label class="media-picker-button" for="memoryMedia">
+                        <span aria-hidden="true">▧</span> 添加照片或视频
+                    </label>
+                    <input id="memoryMedia" name="media" type="file" accept="image/*,video/*" multiple>
+                    <span class="media-picker-hint">可以一次选择多张照片或视频</span>
+                </div>
+                <div class="media-preview" id="mediaPreview" aria-live="polite"></div>
+                <div class="form-bottom">
+                    <p id="memoryStatus" role="status" aria-live="polite">动态和媒体目前保存在这台设备 ♡</p>
+                    <button class="primary-link save-memory" id="publishMemory" type="submit">发布动态 <span aria-hidden="true">♡</span></button>
+                </div>
+            </form>
+        </section>
+
+        <section class="memory-list-section" aria-labelledby="memory-list-title">
+            <div class="timeline-heading">
+                <h2 id="memory-list-title">我们的动态</h2>
+                <span>OUR LITTLE MOMENTS</span>
+            </div>
+            <div class="memory-list" id="memoryList" aria-live="polite"></div>
+        </section>
+        <section class="memory-gallery-section" aria-labelledby="gallery-title">
+            <div class="timeline-heading gallery-heading">
+                <div>
+                    <h2 id="gallery-title">生活记录相册</h2>
+                    <p>所有动态里的照片和视频，都收在这里 ♡</p>
+                </div>
+                <span id="galleryCount">0 个回忆</span>
+            </div>
+            <div class="gallery-filters" role="group" aria-label="筛选相册内容">
+                <button class="gallery-filter active" type="button" data-gallery-filter="all" aria-pressed="true">全部</button>
+                <button class="gallery-filter" type="button" data-gallery-filter="image" aria-pressed="false">照片</button>
+                <button class="gallery-filter" type="button" data-gallery-filter="video" aria-pressed="false">视频</button>
+            </div>
+            <div class="memory-gallery" id="memoryGallery" aria-live="polite"></div>
+        </section>
+        <a class="back-to-love" href="./couple-space.html">← 回到我们的小小宇宙</a>
+    </main>
+    <script src="./js/couple-client.js"></script>
+    <script src="./js/love.js"></script>
+</body>
+</html>
