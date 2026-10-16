@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.github-manager]
 verify_jwt = false
+
+[functions.couple-sync]
+verify_jwt = false

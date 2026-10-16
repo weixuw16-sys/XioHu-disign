@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fff7fb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="小小宇宙">
+    <meta name="description" content="两个人的专属小空间：互相传递想念、收藏日常、一起玩小游戏。">
+    <title>我们的专属空间</title>
+    <link rel="manifest" href="./love-app.webmanifest">
+    <link rel="icon" href="./icons/love-app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/love-app-icon-180.png">
+    <link rel="stylesheet" href="./css/love.css">
+</head>
+<body class="love-page couple-space-page">
+    <canvas class="particle-layer" id="particleLayer" aria-hidden="true"></canvas>
+    <header class="love-nav">
+        <a class="love-brand" href="./couple-space.html">
+            <span class="brand-heart" aria-hidden="true">♥</span>
+            <span>我们的小小宇宙</span>
+        </a>
+        <span class="member-role" id="memberRole">我们的专属空间</span>
+    </header>
+
+    <main class="couple-main">
+        <section class="couple-heading">
+            <p class="eyebrow">JUST FOR THE TWO OF US</p>
+            <p class="member-welcome" id="memberWelcome">正在打开你们的小小宇宙…</p>
+            <h1>欢迎回到<span>小小宇宙</span></h1>
+            <section class="couple-countdowns" aria-label="我们的重要日子">
+                <article class="countdown-card relationship-countdown">
+                    <span class="countdown-icon" aria-hidden="true">♡</span>
+                    <span class="countdown-label">我们已经在一起</span>
+                    <strong id="relationshipDays" class="countdown-value" aria-live="polite">—</strong>
+                    <span class="countdown-caption">从 2026 年 1 月 7 日开始 ♡</span>
+                </article>
+                <article class="countdown-card valentines-countdown">
+                    <span class="countdown-icon" aria-hidden="true">✿</span>
+                    <span class="countdown-label" id="valentinesLabel">距离情人节还有</span>
+                    <strong id="valentinesDays" class="countdown-value" aria-live="polite">—</strong>
+                    <span class="countdown-caption" id="valentinesDate">每年 2 月 14 日</span>
+                </article>
+            </section>
+            <p class="confession-status" id="confessionStatus" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="invite-card" id="inviteCard" aria-labelledby="invite-title" hidden>
+            <div>
+                <p class="eyebrow">YOUR PRIVATE INVITATION</p>
+                <h2 id="invite-title">把这份表白交给她</h2>
+                <p>分享配对码给她。她安装 App、输入配对码，就能打开你写的情书。</p>
+            </div>
+            <strong class="invite-code" id="homeInviteCode">---------- </strong>
+            <div class="invite-actions">
+                <button class="primary-link invite-copy" id="copyInviteButton" type="button">复制配对码</button>
+                <button class="invite-renew" id="renewInviteButton" type="button" hidden>重新准备表白</button>
+            </div>
+            <p class="invite-status" id="inviteStatus" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="system-section" aria-labelledby="systems-title">
+            <div class="system-section-heading">
+                <div>
+                    <p class="eyebrow">YOUR DAILY LITTLE THINGS</p>
+                    <h2 id="systems-title">常用功能</h2>
+                </div>
+                <span>只属于你们两个人</span>
+            </div>
+            <section class="system-grid" aria-label="我们的常用功能">
+            <a class="system-card wake-system-card" href="./wake.html">
+                <span class="system-icon" aria-hidden="true">♡</span>
+                <span class="system-copy">
+                    <span class="system-label">想念的时候</span>
+                    <strong>唤醒一下</strong>
+                    <small>传一句话给对方，收到后还能回复。</small>
+                </span>
+                <span class="system-action" aria-hidden="true">→</span>
+            </a>
+            <a class="system-card diary-system-card" href="./memories.html">
+                <span class="system-icon" aria-hidden="true">▧</span>
+                <span class="system-copy">
+                    <span class="system-label">值得记下来的</span>
+                    <strong>日常记录</strong>
+                    <small>把照片、视频和生活片段收藏起来。</small>
+                </span>
+                <span class="system-action" aria-hidden="true">→</span>
+            </a>
+            </section>
+        </section>
+
+        <section class="later-section" aria-labelledby="later-title">
+            <h2 id="later-title">更多小惊喜</h2>
+            <a class="later-link" id="gamesLink" href="./games.html">
+                <span class="later-icon" aria-hidden="true">✿</span>
+                <span><strong>双人小游戏</strong><small>正在准备中，等以后一起解锁</small></span>
+                <span class="system-action" aria-hidden="true">→</span>
+            </a>
+        </section>
+    </main>
+    <script src="./js/couple-client.js"></script>
+    <script src="./js/love.js"></script>
+</body>
+</html>

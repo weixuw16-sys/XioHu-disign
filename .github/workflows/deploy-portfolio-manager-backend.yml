@@ -10,6 +10,8 @@ on:
       - "supabase/functions/_shared/manager.ts"
       - "supabase/functions/github-auth/**"
       - "supabase/functions/github-manager/**"
+      - "supabase/functions/couple-sync/**"
+      - "supabase/config.toml"
 
 permissions:
   contents: read
@@ -45,3 +47,8 @@ jobs:
         env:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: supabase functions deploy github-manager --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+
+      - name: Deploy couple connection function
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy couple-sync --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt

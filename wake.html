@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fff7fb">
+    <title>唤醒一下 · 我们的小小宇宙</title>
+    <link rel="manifest" href="./love-app.webmanifest">
+    <link rel="icon" href="./icons/love-app-icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/love-app-icon-180.png">
+    <link rel="stylesheet" href="./css/love.css">
+</head>
+<body class="love-page wake-page">
+    <canvas class="particle-layer" id="particleLayer" aria-hidden="true"></canvas>
+    <header class="love-nav">
+        <a class="love-brand" href="./couple-space.html">
+            <span class="brand-heart" aria-hidden="true">♥</span>
+            <span>我们的小小宇宙</span>
+        </a>
+        <a class="nav-memory" href="./couple-space.html">回到专属空间 <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main class="memories-main wake-main">
+        <section class="memories-heading wake-heading">
+            <p class="eyebrow">A LITTLE PING FROM ME TO YOU</p>
+            <h1>现在有一点<span>想你</span>。</h1>
+            <p>不一定要说「我想你」，此刻想说的话，都可以送给对方。</p>
+        </section>
+
+        <section class="memory-composer wake-composer" aria-labelledby="wake-form-title">
+            <div class="wake-card-icon" aria-hidden="true">♡</div>
+            <h2 id="wake-form-title">想对 TA 说什么？</h2>
+            <form id="wakeForm">
+                <label class="visually-hidden" for="wakeText">写下一句想说的话</label>
+                <textarea id="wakeText" name="message" rows="4" maxlength="300" placeholder="比如：刚刚看到一朵很像你的云 ☁" required></textarea>
+                <div class="form-bottom">
+                    <p id="wakeStatus" role="status" aria-live="polite">写下你此刻想说的话，送给对方。</p>
+                    <button class="primary-link save-memory" id="sendWake" type="submit">送出想念 <span aria-hidden="true">♡</span></button>
+                </div>
+            </form>
+            <p class="wake-demo-note">对方打开 App 时即可收到新想念；App 关闭时的系统推送还在准备中。</p>
+        </section>
+
+        <section class="memory-list-section wake-inbox-section" aria-labelledby="wake-inbox-title">
+            <div class="timeline-heading">
+                <h2 id="wake-inbox-title">收到的想念</h2>
+                <span>YOUR LITTLE PINGS</span>
+            </div>
+            <div class="wake-list" id="wakeList" aria-live="polite"></div>
+        </section>
+        <a class="back-to-love" href="./couple-space.html">← 回到我们的专属空间</a>
+    </main>
+    <script src="./js/couple-client.js"></script>
+    <script src="./js/love.js"></script>
+</body>
+</html>

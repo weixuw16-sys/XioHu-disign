@@ -109,3 +109,26 @@ days. Use **退出登录** to revoke and clear the current device's session.
 
 If GitHub organization or repository rules require OAuth app approval, approve
 the OAuth app for the repository owner before logging in.
+
+## 8. Enable the couple Android app
+
+The couple app uses the same Supabase project for one-time invitation codes,
+confession responses, and wake-up messages. Before sharing an updated Android
+app:
+
+1. In the Supabase SQL Editor, run
+   `supabase/migrations/20261016000000_create_love_couples.sql`.
+2. Merge the app changes to `main`, then run **Deploy portfolio manager
+   backend** from the repository's Actions tab. The workflow deploys the
+   `couple-sync` function with JWT verification disabled because the function
+   validates each device's random, private pairing token itself.
+3. Build and share the updated Android APK. The boy creates a 10-character
+   invitation code; the girl installs the app, chooses **我是女生**, and enters
+   the code to receive the confession.
+
+The Android client contains only the project's publishable key. Pairing codes
+and device tokens are stored as hashes by the database; the service-role key
+stays in Supabase. Wake-up messages sync when the app is opened. System
+notifications while the app is closed require a Firebase Cloud Messaging
+project and are not enabled by this setup. Daily photos and videos remain
+device-local for now.
