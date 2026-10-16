@@ -51,12 +51,46 @@
         return result;
     };
 
+    const showPushNotification = notification => {
+        const toast = document.createElement("div");
+        toast.className = "push-notification-toast";
+        toast.setAttribute("role", "status");
+        const title = document.createElement("strong");
+        title.textContent = notification.title || "收到一份新的想念 ♡";
+        const body = document.createElement("span");
+        body.textContent = notification.body || "打开唤醒一下，看看 TA 想对你说什么。";
+        toast.append(title, body);
+        toast.addEventListener("click", () => navigate("wake.html"), { once: true });
+        document.body.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 6000);
+    };
+
+    const initializePushNotifications = async () => {
+        if (!isNative || !window.LovePush) return;
+        window.LovePush.onToken = async token => {
+            try {
+                await request("register-device", { token });
+            } catch (error) {
+                console.error("Could not register this phone for wake notifications:", error);
+            }
+        };
+        window.LovePush.onNotification = showPushNotification;
+        window.LovePush.onNotificationAction = () => navigate("wake.html");
+        try {
+            await window.LovePush.register();
+        } catch (error) {
+            console.error("Could not enable wake notifications:", error);
+        }
+    };
+
     const setStatus = (element, message) => {
         if (element) element.textContent = message;
     };
 
     const currentPage = () => window.location.pathname.split("/").pop() || "index.html";
-    const navigate = page => window.location.replace(`./${page}`);
+    const navigate = page => {
+        if (currentPage() !== page) window.location.replace(`./${page}`);
+    };
     const updateDays = () => {
         const targets = [
             document.getElementById("relationshipDays"),
@@ -104,7 +138,7 @@
             return;
         }
         if (session.role === "girl" && state.couple.confessionStatus === "pending") {
-            navigate("confession.html");
+            if (currentPage() !== "confession.html") navigate("confession.html");
             return;
         }
         if (currentPage() === "confession.html") {
@@ -144,6 +178,8 @@
     const initSetupPage = () => {
         const boyPanel = document.getElementById("boySetupPanel");
         const girlPanel = document.getElementById("girlSetupPanel");
+        const roleSwitch = document.querySelector(".role-switch");
+        const inviteResult = document.getElementById("createdInviteResult");
         const roleChoices = Array.from(document.querySelectorAll("[data-role-choice]"));
         const status = document.getElementById("setupStatus");
 
@@ -184,7 +220,19 @@
                     displayName: name,
                     role: result.role
                 });
-                navigate("couple-space.html");
+                void initializePushNotifications();
+                roleSwitch.hidden = true;
+                boyPanel.hidden = true;
+                girlPanel.hidden = true;
+                inviteResult.hidden = false;
+                document.getElementById("createdInviteCode").textContent = result.inviteCode;
+                document.getElementById("createdInviteExpiry").textContent =
+                    `配对码有效至 ${new Date(result.inviteExpiresAt).toLocaleString()}。`;
+                setStatus(status, "配对码已生成，请复制并分享给她。");
+                document.getElementById("copyCreatedInviteButton").addEventListener("click", () =>
+                    copyText(result.inviteCode, status));
+                document.getElementById("continueToHomeButton").addEventListener("click", () =>
+                    navigate("couple-space.html"));
             } catch (error) {
                 console.error("Could not create a couple invitation:", error);
                 setStatus(status, error.message);
@@ -443,10 +491,12 @@
             submit.disabled = true;
             setStatus(status, "正在把这份想念送给 TA…");
             try {
-                await request("send-wake", { message });
+                const result = await request("send-wake", { message });
                 form.reset();
                 await refresh();
-                setStatus(status, "想念送出啦 ♡ 对方打开 App 后就能收到。");
+                setStatus(status, result.pushSent
+                    ? "想念和手机通知都送出啦 ♡"
+                    : "想念已经保存；暂时没有发送手机通知，请确认 Firebase 已配置且对方允许通知。");
             } catch (error) {
                 console.error("Could not send the wake message:", error);
                 setStatus(status, error.message);
@@ -471,6 +521,7 @@
             localStorage.removeItem(SESSION_KEY);
             session = null;
         }
+        if (session) void initializePushNotifications();
 
         const page = currentPage();
         if (!session) {

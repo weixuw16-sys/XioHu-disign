@@ -12,6 +12,15 @@ class RequestError extends Error {
   }
 }
 
+interface FirebaseServiceAccount {
+  project_id: string;
+  client_email: string;
+  private_key: string;
+  token_uri?: string;
+}
+
+let cachedGoogleAccessToken: { value: string; expiresAt: number } | null = null;
+
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name);
   if (!value) throw new Error(`Server configuration missing: ${name}`);
@@ -73,6 +82,109 @@ async function rest(path: string, init: RequestInit = {}): Promise<unknown> {
     throw new Error("暂时无法连接小小宇宙服务器，请稍后重试。");
   }
   return text ? JSON.parse(text) : null;
+}
+
+function base64Url(value: string | Uint8Array): string {
+  const bytes = typeof value === "string" ? encoder.encode(value) : value;
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+async function getGoogleAccessToken(account: FirebaseServiceAccount): Promise<string> {
+  if (cachedGoogleAccessToken && cachedGoogleAccessToken.expiresAt > Date.now() + 60_000) {
+    return cachedGoogleAccessToken.value;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const unsigned = [
+    base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" })),
+    base64Url(JSON.stringify({
+      iss: account.client_email,
+      scope: "https://www.googleapis.com/auth/firebase.messaging",
+      aud: account.token_uri || "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    })),
+  ].join(".");
+  const pem = account.private_key.replace(/\\n/g, "\n");
+  const keyBytes = Uint8Array.from(
+    atob(pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "")),
+    character => character.charCodeAt(0),
+  );
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    keyBytes,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, encoder.encode(unsigned));
+  const assertion = `${unsigned}.${base64Url(new Uint8Array(signature))}`;
+  const tokenResponse = await fetch(account.token_uri || "https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  const tokenResult = await tokenResponse.json();
+  if (!tokenResponse.ok || typeof tokenResult.access_token !== "string") {
+    throw new Error(`Google OAuth token request failed: ${JSON.stringify(tokenResult)}`);
+  }
+  cachedGoogleAccessToken = {
+    value: tokenResult.access_token,
+    expiresAt: Date.now() + Number(tokenResult.expires_in || 3600) * 1000,
+  };
+  return cachedGoogleAccessToken.value;
+}
+
+async function sendWakePush(coupleId: string, recipientRole: "boy" | "girl", message: string): Promise<boolean> {
+  const serviceAccountValue = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+  if (!serviceAccountValue) {
+    console.warn("Firebase push is not configured; wake message was saved without a push notification.");
+    return false;
+  }
+
+  const account = JSON.parse(serviceAccountValue) as FirebaseServiceAccount;
+  if (!account.project_id || !account.client_email || !account.private_key) {
+    throw new Error("Firebase service account configuration is incomplete.");
+  }
+  const rows = await rest(
+    `love_push_tokens?select=token&couple_id=eq.${coupleId}&role=eq.${recipientRole}`,
+  ) as Array<{ token: string }>;
+  if (!rows.length) return false;
+
+  const accessToken = await getGoogleAccessToken(account);
+  const results = await Promise.all(rows.map(async ({ token }) => {
+    const response = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(account.project_id)}/messages:send`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: {
+              title: "收到一份新的想念 ♡",
+              body: message.slice(0, 160),
+            },
+            data: { route: "wake.html" },
+            android: { priority: "high" },
+          },
+        }),
+      },
+    );
+    if (!response.ok) {
+      console.error("Firebase push request failed:", response.status, await response.text());
+    }
+    return response.ok;
+  }));
+  return results.some(Boolean);
 }
 
 interface Couple {
@@ -199,6 +311,23 @@ Deno.serve(async request => {
     }
     const { couple, role } = await findCouple(await digest(pairToken));
 
+    if (body.action === "register-device") {
+      if (typeof body.token !== "string" || body.token.length < 20 || body.token.length > 4096) {
+        return jsonResponse({ error: "手机通知设备信息无效。" }, 400);
+      }
+      await rest("love_push_tokens?on_conflict=couple_id,token", {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({
+          couple_id: couple.id,
+          role,
+          token: body.token,
+          updated_at: new Date().toISOString(),
+        }),
+      });
+      return jsonResponse({ registered: true });
+    }
+
     if (body.action === "get-state") {
       const messages = await rest(
         `love_wake_messages?select=id,sender_role,body,created_at,received_at&couple_id=eq.${couple.id}&order=created_at.desc&limit=100`,
@@ -214,7 +343,15 @@ Deno.serve(async request => {
         headers: { Prefer: "return=representation" },
         body: JSON.stringify({ couple_id: couple.id, sender_role: role, body: message }),
       }) as unknown[];
-      return jsonResponse({ message: created[0] });
+      const pushSent = await sendWakePush(
+        couple.id,
+        role === "boy" ? "girl" : "boy",
+        message,
+      ).catch(error => {
+        console.error("Wake message push notification failed:", error);
+        return false;
+      });
+      return jsonResponse({ message: created[0], pushSent });
     }
 
     if (body.action === "ack-wake") {

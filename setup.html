@@ -58,6 +58,16 @@
                 <button class="primary-link setup-submit" type="submit">收下他的表白 <span aria-hidden="true">♥</span></button>
             </form>
         </section>
+        <section class="setup-panel setup-invite-result" id="createdInviteResult" aria-labelledby="created-invite-title" hidden>
+            <h2 id="created-invite-title">配对码已经准备好啦 ♡</h2>
+            <p>把下面这组 10 位配对码发给她。她安装 App 后选择“我是女生”并输入配对码，就能收到你的表白。</p>
+            <strong class="invite-code" id="createdInviteCode"></strong>
+            <div class="invite-actions">
+                <button class="primary-link invite-copy" id="copyCreatedInviteButton" type="button">复制配对码</button>
+                <button class="invite-renew" id="continueToHomeButton" type="button">进入我们的小小宇宙</button>
+            </div>
+            <p id="createdInviteExpiry" class="invite-status"></p>
+        </section>
         <p class="setup-status" id="setupStatus" role="status" aria-live="polite">写好想说的话，生成配对码后分享给她。</p>
         <p class="setup-footnote">配对与收取表白需要联网；唤醒消息会保存在你们的专属空间里。</p>
     </main>

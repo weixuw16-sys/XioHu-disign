@@ -1490,6 +1490,46 @@ a {
     display: none;
 }
 
+.setup-invite-result {
+    text-align: center;
+}
+
+.setup-invite-result .invite-code {
+    display: block;
+    margin: 16px 0;
+    letter-spacing: .12em;
+}
+
+.setup-invite-result .invite-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.push-notification-toast {
+    position: fixed;
+    z-index: 1000;
+    top: max(14px, env(safe-area-inset-top));
+    right: 14px;
+    left: 14px;
+    display: grid;
+    gap: 4px;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 14px 16px;
+    border: 1px solid #e8edf8;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 12px 34px rgba(55, 72, 111, .18);
+    color: #5b6480;
+    cursor: pointer;
+    animation: card-arrive 220ms ease-out both;
+}
+
+.push-notification-toast span {
+    color: #858ba0;
+    font-size: 13px;
+}
+
 .setup-panel h2 {
     margin: 0;
     color: #5b6480;

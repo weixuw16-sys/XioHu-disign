@@ -118,17 +118,33 @@ app:
 
 1. In the Supabase SQL Editor, run
    `supabase/migrations/20261016000000_create_love_couples.sql`.
-2. Merge the app changes to `main`, then run **Deploy portfolio manager
+2. In the Supabase SQL Editor, also run
+   `supabase/migrations/20261017000000_create_love_push_tokens.sql`.
+3. Merge the app changes to `main`, then run **Deploy portfolio manager
    backend** from the repository's Actions tab. The workflow deploys the
    `couple-sync` function with JWT verification disabled because the function
    validates each device's random, private pairing token itself.
-3. Build and share the updated Android APK. The boy creates a 10-character
+4. Build and share the updated Android APK. The boy creates a 10-character
    invitation code; the girl installs the app, chooses **我是女生**, and enters
    the code to receive the confession.
 
 The Android client contains only the project's publishable key. Pairing codes
-and device tokens are stored as hashes by the database; the service-role key
-stays in Supabase. Wake-up messages sync when the app is opened. System
-notifications while the app is closed require a Firebase Cloud Messaging
-project and are not enabled by this setup. Daily photos and videos remain
-device-local for now.
+and pairing tokens are stored as hashes by the database; push delivery tokens
+are stored in a service-role-only table. The service-role key stays in Supabase.
+
+### Enable Android push notifications
+
+1. In Firebase Console, create a Firebase project and add an Android app with
+   package name `com.xiohu.littleuniverse`.
+2. Download `google-services.json` and place it at
+   `android-app/android/app/google-services.json`. This file is ignored by Git;
+   do not commit or share it publicly.
+3. Create a Firebase service account key with Firebase Cloud Messaging access.
+   In Supabase **Project Settings → Edge Functions → Secrets**, add
+   `FIREBASE_SERVICE_ACCOUNT_JSON` with the complete service-account JSON
+   contents. Never put this private key in the Android app or repository.
+4. Rebuild and install the Android app. Allow notifications when prompted.
+   Once both people have paired and registered their device, new wake messages
+   can arrive as Android system notifications even when the app is closed.
+
+Daily photos and videos remain device-local for now.
