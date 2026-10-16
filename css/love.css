@@ -1490,6 +1490,21 @@ a {
     display: none;
 }
 
+.setup-invite-result {
+    text-align: center;
+}
+
+.setup-invite-result .invite-code {
+    display: block;
+    margin: 16px 0;
+    letter-spacing: .12em;
+}
+
+.setup-invite-result .invite-actions {
+    display: grid;
+    gap: 8px;
+}
+
 .setup-panel h2 {
     margin: 0;
     color: #5b6480;

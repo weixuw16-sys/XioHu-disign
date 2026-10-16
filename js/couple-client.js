@@ -144,6 +144,8 @@
     const initSetupPage = () => {
         const boyPanel = document.getElementById("boySetupPanel");
         const girlPanel = document.getElementById("girlSetupPanel");
+        const roleSwitch = document.querySelector(".role-switch");
+        const inviteResult = document.getElementById("createdInviteResult");
         const roleChoices = Array.from(document.querySelectorAll("[data-role-choice]"));
         const status = document.getElementById("setupStatus");
 
@@ -184,7 +186,18 @@
                     displayName: name,
                     role: result.role
                 });
-                navigate("couple-space.html");
+                roleSwitch.hidden = true;
+                boyPanel.hidden = true;
+                girlPanel.hidden = true;
+                inviteResult.hidden = false;
+                document.getElementById("createdInviteCode").textContent = result.inviteCode;
+                document.getElementById("createdInviteExpiry").textContent =
+                    `配对码有效至 ${new Date(result.inviteExpiresAt).toLocaleString()}。`;
+                setStatus(status, "配对码已生成，请复制并分享给她。");
+                document.getElementById("copyCreatedInviteButton").addEventListener("click", () =>
+                    copyText(result.inviteCode, status));
+                document.getElementById("continueToHomeButton").addEventListener("click", () =>
+                    navigate("couple-space.html"));
             } catch (error) {
                 console.error("Could not create a couple invitation:", error);
                 setStatus(status, error.message);
