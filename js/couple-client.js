@@ -56,7 +56,9 @@
     };
 
     const currentPage = () => window.location.pathname.split("/").pop() || "index.html";
-    const navigate = page => window.location.replace(`./${page}`);
+    const navigate = page => {
+        if (currentPage() !== page) window.location.replace(`./${page}`);
+    };
     const updateDays = () => {
         const targets = [
             document.getElementById("relationshipDays"),
@@ -104,7 +106,7 @@
             return;
         }
         if (session.role === "girl" && state.couple.confessionStatus === "pending") {
-            navigate("confession.html");
+            if (currentPage() !== "confession.html") navigate("confession.html");
             return;
         }
         if (currentPage() === "confession.html") {
