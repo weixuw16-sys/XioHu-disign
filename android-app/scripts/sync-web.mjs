@@ -16,6 +16,14 @@ const appPages = [
     "wake.html"
 ];
 
+let firebaseConfigured = false;
+try {
+    await readFile(path.join(appDirectory, "android", "app", "google-services.json"));
+    firebaseConfigured = true;
+} catch (error) {
+    if (error.code !== "ENOENT") throw error;
+}
+
 await rm(webDirectory, { recursive: true, force: true });
 await mkdir(webDirectory, { recursive: true });
 
@@ -24,11 +32,11 @@ for (const page of appPages) {
     const nativePage = source.includes('src="./js/couple-client.js"')
         ? source.replace(
             '    <script src="./js/couple-client.js"></script>',
-            '    <script src="./js/native-runtime.js"></script>\n    <script src="./js/couple-client.js"></script>'
+            `    <script>window.LoveFirebaseConfigured = ${firebaseConfigured};</script>\n    <script src="./js/native-runtime.js"></script>\n    <script src="./js/couple-client.js"></script>`
         )
         : source.replace(
             '    <script src="./js/love.js"></script>',
-            '    <script src="./js/native-runtime.js"></script>\n    <script src="./js/couple-client.js"></script>\n    <script src="./js/love.js"></script>'
+            `    <script>window.LoveFirebaseConfigured = ${firebaseConfigured};</script>\n    <script src="./js/native-runtime.js"></script>\n    <script src="./js/couple-client.js"></script>\n    <script src="./js/love.js"></script>`
         );
     await writeFile(path.join(webDirectory, page), nativePage);
 }

@@ -395,6 +395,8 @@
         let postMediaUrls = [];
         let galleryMediaUrls = [];
         let activeGalleryFilter = "all";
+        publishButton.disabled = true;
+        setStatus("正在准备本机记录空间…");
 
         const setStatus = message => {
             status.textContent = message;
@@ -737,10 +739,13 @@
                     Array.isArray(post.media)
                 );
                 renderPosts();
+                publishButton.disabled = false;
+                setStatus("动态和媒体保存在这台设备上；发布成功后会出现在下面的列表。");
             })
             .catch(error => {
                 console.error("Could not initialize the memories database:", error);
-                setStatus("无法读取浏览器本地动态，请确认使用支持本地存储的浏览器后刷新。");
+                publishButton.disabled = true;
+                setStatus("本机记录空间无法打开，暂时不能发布以免内容丢失。请重启 App 后重试；若仍失败，请告诉我这条提示。");
             });
     }
 })();

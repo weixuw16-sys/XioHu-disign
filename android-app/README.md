@@ -6,10 +6,12 @@ on the role setup page and works offline after installation.
 
 The couple app connects through the existing Supabase project. Apply
 `supabase/migrations/20261016000000_create_love_couples.sql` in its SQL Editor
-and deploy the `couple-sync` function before sharing the APK. The boy creates a
+and `supabase/migrations/20261017000000_create_love_push_tokens.sql`, then
+deploy the `couple-sync` function before sharing the APK. The boy creates a
 10-character invitation code; the girl installs the app and enters it to
-receive the confession. Wake-up messages sync when the app is opened.
-Notifications while the app is closed still require Firebase Cloud Messaging.
+receive the confession. Firebase Cloud Messaging requires a Firebase project,
+an ignored `android/app/google-services.json` file, and the server-only
+`FIREBASE_SERVICE_ACCOUNT_JSON` Supabase secret. See `supabase/SETUP.md`.
 Daily photos and videos are currently stored on each device.
 
 ## Build a debug APK on Windows

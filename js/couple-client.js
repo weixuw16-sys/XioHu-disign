@@ -51,6 +51,38 @@
         return result;
     };
 
+    const showPushNotification = notification => {
+        const toast = document.createElement("div");
+        toast.className = "push-notification-toast";
+        toast.setAttribute("role", "status");
+        const title = document.createElement("strong");
+        title.textContent = notification.title || "收到一份新的想念 ♡";
+        const body = document.createElement("span");
+        body.textContent = notification.body || "打开唤醒一下，看看 TA 想对你说什么。";
+        toast.append(title, body);
+        toast.addEventListener("click", () => navigate("wake.html"), { once: true });
+        document.body.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 6000);
+    };
+
+    const initializePushNotifications = async () => {
+        if (!isNative || !window.LovePush) return;
+        window.LovePush.onToken = async token => {
+            try {
+                await request("register-device", { token });
+            } catch (error) {
+                console.error("Could not register this phone for wake notifications:", error);
+            }
+        };
+        window.LovePush.onNotification = showPushNotification;
+        window.LovePush.onNotificationAction = () => navigate("wake.html");
+        try {
+            await window.LovePush.register();
+        } catch (error) {
+            console.error("Could not enable wake notifications:", error);
+        }
+    };
+
     const setStatus = (element, message) => {
         if (element) element.textContent = message;
     };
@@ -188,6 +220,7 @@
                     displayName: name,
                     role: result.role
                 });
+                void initializePushNotifications();
                 roleSwitch.hidden = true;
                 boyPanel.hidden = true;
                 girlPanel.hidden = true;
@@ -458,10 +491,12 @@
             submit.disabled = true;
             setStatus(status, "正在把这份想念送给 TA…");
             try {
-                await request("send-wake", { message });
+                const result = await request("send-wake", { message });
                 form.reset();
                 await refresh();
-                setStatus(status, "想念送出啦 ♡ 对方打开 App 后就能收到。");
+                setStatus(status, result.pushSent
+                    ? "想念和手机通知都送出啦 ♡"
+                    : "想念已经保存；暂时没有发送手机通知，请确认 Firebase 已配置且对方允许通知。");
             } catch (error) {
                 console.error("Could not send the wake message:", error);
                 setStatus(status, error.message);
@@ -486,6 +521,7 @@
             localStorage.removeItem(SESSION_KEY);
             session = null;
         }
+        if (session) void initializePushNotifications();
 
         const page = currentPage();
         if (!session) {
