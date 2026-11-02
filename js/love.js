@@ -390,17 +390,19 @@
 
         let legacyPosts = [];
         let savedPosts = [];
+        let cloudPosts = [];
         let database = null;
         let previewUrls = [];
         let postMediaUrls = [];
         let galleryMediaUrls = [];
         let activeGalleryFilter = "all";
         publishButton.disabled = true;
-        setStatus("正在准备本机记录空间…");
 
         const setStatus = message => {
             status.textContent = message;
         };
+
+        setStatus(isNativeApp ? "正在加载你们共同的生活记录…" : "正在准备本机记录空间…");
 
         const openDatabase = () => new Promise((resolve, reject) => {
             if (!window.indexedDB) {
@@ -526,8 +528,8 @@
                 const card = document.createElement("article");
                 card.className = "gallery-item";
                 card.dataset.mediaType = item.media.type.startsWith("video/") ? "video" : "image";
-                const url = URL.createObjectURL(item.media.blob || item.media);
-                galleryMediaUrls.push(url);
+                const url = item.media.url || URL.createObjectURL(item.media.blob || item.media);
+                if (!item.media.url) galleryMediaUrls.push(url);
                 card.appendChild(createMediaElement(item.media, url, index));
 
                 const caption = document.createElement("time");
@@ -550,7 +552,13 @@
                     media: []
                 },
                 ...legacyPosts,
-                ...savedPosts.map(post => ({ ...post, source: "database" }))
+                ...savedPosts.map(post => ({ ...post, source: "database" })),
+                ...cloudPosts.map(post => ({
+                    ...post,
+                    date: post.memory_date,
+                    text: post.body,
+                    source: "cloud"
+                }))
             ].sort((left, right) => right.date.localeCompare(left.date) || right.id.localeCompare(left.id));
             renderGallery(entries);
 
@@ -585,7 +593,10 @@
                         if (!window.confirm("确定删除这条动态吗？")) return;
                         remove.disabled = true;
                         try {
-                            if (entry.source === "database") {
+                            if (entry.source === "cloud") {
+                                await window.LoveCouple.deleteMemory(entry.id);
+                                cloudPosts = cloudPosts.filter(post => post.id !== entry.id);
+                            } else if (entry.source === "database") {
                                 await deleteSavedPost(database, entry.id);
                                 savedPosts = savedPosts.filter(post => post.id !== entry.id);
                             } else {
@@ -618,8 +629,8 @@
                     const mediaGrid = document.createElement("div");
                     mediaGrid.className = `post-media-grid media-count-${Math.min(entry.media.length, 4)}`;
                     entry.media.forEach((media, index) => {
-                        const url = URL.createObjectURL(media.blob || media);
-                        postMediaUrls.push(url);
+                        const url = media.url || URL.createObjectURL(media.blob || media);
+                        if (!media.url) postMediaUrls.push(url);
                         mediaGrid.appendChild(createMediaElement(media, url, index));
                     });
                     article.appendChild(mediaGrid);
@@ -658,13 +669,29 @@
 
         mediaInput.addEventListener("change", () => {
             const files = Array.from(mediaInput.files || []);
+            if (files.length > 5) {
+                mediaInput.value = "";
+                renderPreview();
+                setStatus("每条动态最多添加 5 个照片或视频。");
+                return;
+            }
             const invalidFile = files.find(file =>
-                !file.type.startsWith("image/") && !file.type.startsWith("video/")
+                ![
+                    "image/jpeg", "image/png", "image/webp", "image/gif",
+                    "video/mp4", "video/quicktime", "video/webm"
+                ].includes(file.type)
             );
             if (invalidFile) {
                 mediaInput.value = "";
                 renderPreview();
                 setStatus("只能添加照片或视频文件。");
+                return;
+            }
+            const oversizedFile = files.find(file => file.size > 25 * 1024 * 1024);
+            if (oversizedFile) {
+                mediaInput.value = "";
+                renderPreview();
+                setStatus("单个照片或视频不能超过 25 MB。");
                 return;
             }
             renderPreview();
@@ -680,7 +707,7 @@
                 setStatus("写一点内容，或至少添加一张照片/视频，再发布动态哦。");
                 return;
             }
-            if (!database) {
+            if (!isNativeApp && !database) {
                 setStatus("浏览器本地记录功能尚未就绪，请刷新页面后重试。");
                 return;
             }
@@ -695,18 +722,49 @@
                 media: files.map(file => ({ name: file.name, type: file.type, blob: file }))
             };
             try {
-                await writeSavedPost(database, post);
-                savedPosts.push(post);
+                if (isNativeApp) {
+                    const uploadedMedia = [];
+                    try {
+                        for (let index = 0; index < files.length; index += 1) {
+                            setStatus(`正在上传照片或视频（${index + 1}/${files.length}）…`);
+                            uploadedMedia.push(await window.LoveCouple.uploadMemoryMedia(files[index]));
+                        }
+                        setStatus("正在保存到你们共同的生活记录…");
+                        const result = await window.LoveCouple.createMemory({
+                            date,
+                            text,
+                            media: uploadedMedia
+                        });
+                        cloudPosts.unshift(result.memory);
+                    } catch (error) {
+                        if (uploadedMedia.length) {
+                            try {
+                                await window.LoveCouple.deleteMemoryMedia(uploadedMedia.map(item => item.path));
+                            } catch (cleanupError) {
+                                console.error("Could not clean up an incomplete memory upload:", cleanupError);
+                            }
+                        }
+                        throw error;
+                    }
+                } else {
+                    if (!database) throw new Error("本机记录空间尚未准备好，请稍后重试。");
+                    await writeSavedPost(database, post);
+                    savedPosts.push(post);
+                }
                 memoryForm.reset();
                 dateInput.value = todayString;
                 revokeUrls(previewUrls);
                 preview.replaceChildren();
                 preview.className = "media-preview";
-                setStatus("发布成功，这条动态已经加入你们的回忆啦 ♡");
+                setStatus(isNativeApp
+                    ? "发布成功！你们两个人都能看到这条生活记录啦 ♡"
+                    : "发布成功，这条动态已经加入你们的回忆啦 ♡");
                 renderPosts();
             } catch (error) {
                 console.error("Could not publish the post:", error);
-                setStatus("发布失败，浏览器可能没有足够的本地存储空间。请尝试减少或压缩媒体文件后重试。");
+                setStatus(isNativeApp
+                    ? (error instanceof Error ? `发布失败：${error.message}` : "发布失败，请检查网络后重试。")
+                    : "发布失败，浏览器可能没有足够的本地存储空间。请尝试减少或压缩媒体文件后重试。");
             } finally {
                 publishButton.disabled = false;
             }
@@ -726,7 +784,7 @@
         }
 
         renderPosts();
-        openDatabase()
+        const localPostsReady = openDatabase()
             .then(db => {
                 database = db;
                 return readSavedPosts(db);
@@ -738,14 +796,28 @@
                     typeof post.date === "string" &&
                     Array.isArray(post.media)
                 );
-                renderPosts();
-                publishButton.disabled = false;
-                setStatus("动态和媒体保存在这台设备上；发布成功后会出现在下面的列表。");
             })
             .catch(error => {
-                console.error("Could not initialize the memories database:", error);
+                console.error("Could not initialize the local memories database:", error);
+                if (!isNativeApp) throw error;
+            });
+        const cloudPostsReady = isNativeApp
+            ? window.LoveCouple.listMemories().then(posts => { cloudPosts = posts; })
+            : Promise.resolve();
+        Promise.all([localPostsReady, cloudPostsReady])
+            .then(() => {
+                renderPosts();
+                publishButton.disabled = !isNativeApp && !database;
+                setStatus(isNativeApp
+                    ? "动态和媒体会同步到你们两个人的手机。每条动态最多 5 个文件，单个文件不超过 25 MB。"
+                    : "动态和媒体保存在这台设备上；发布成功后会出现在下面的列表。");
+            })
+            .catch(error => {
+                console.error("Could not initialize couple memories:", error);
                 publishButton.disabled = true;
-                setStatus("本机记录空间无法打开，暂时不能发布以免内容丢失。请重启 App 后重试；若仍失败，请告诉我这条提示。");
+                setStatus(isNativeApp
+                    ? "无法加载云端生活记录，请检查网络连接后刷新重试。"
+                    : "本机记录空间无法打开，暂时不能发布以免内容丢失。请重启 App 后重试。");
             });
     }
 })();

@@ -1,8 +1,19 @@
 const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const encoder = new TextEncoder();
+const MEMORY_BUCKET = "love-memories";
+const MAX_MEMORY_MEDIA_SIZE = 25 * 1024 * 1024;
+const MEMORY_MEDIA_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+};
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "apikey, content-type, x-couple-token",
+  "Access-Control-Allow-Headers": "apikey, content-type, x-couple-token, x-file-name",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -82,6 +93,71 @@ async function rest(path: string, init: RequestInit = {}): Promise<unknown> {
     throw new Error("暂时无法连接小小宇宙服务器，请稍后重试。");
   }
   return text ? JSON.parse(text) : null;
+}
+
+async function storage(path: string, init: RequestInit = {}): Promise<unknown> {
+  const response = await fetch(`${requiredEnv("SUPABASE_URL")}/storage/v1/${path}`, {
+    ...init,
+    headers: {
+      ...Object.fromEntries(serviceHeaders(init.headers)),
+      ...Object.fromEntries(new Headers(init.headers)),
+    },
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    console.error("Couple memory storage request failed:", response.status, text);
+    throw new Error("照片或视频存储失败，请稍后重试。");
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+function storagePath(path: string): string {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
+function isValidMemoryDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+}
+
+function isOwnedMemoryMediaPath(path: string, coupleId: string, role: string): boolean {
+  const prefix = `${coupleId}/${role}/`;
+  if (!path.startsWith(prefix)) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif|mp4|mov|webm)$/i
+    .test(path.slice(prefix.length));
+}
+
+async function removeMemoryMedia(paths: string[]): Promise<void> {
+  if (!paths.length) return;
+  await storage(`object/${MEMORY_BUCKET}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prefixes: paths }),
+  });
+}
+
+async function withSignedMedia<T extends { media: Array<Record<string, unknown>> }>(
+  memory: T,
+): Promise<T> {
+  const media = await Promise.all(memory.media.map(async item => {
+    const result = await storage(
+      `object/sign/${MEMORY_BUCKET}/${storagePath(String(item.path))}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresIn: 3600 }),
+      },
+    ) as { signedURL: string };
+    const signedPath = result.signedURL.startsWith("/storage/v1/")
+      ? result.signedURL
+      : `/storage/v1${result.signedURL}`;
+    return { ...item, url: new URL(signedPath, requiredEnv("SUPABASE_URL")).href };
+  }));
+  return { ...memory, media };
 }
 
 function base64Url(value: string | Uint8Array): string {
@@ -232,11 +308,53 @@ function publicState(couple: Couple, role: "boy" | "girl") {
 
 Deno.serve(async request => {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  const isMediaUpload = new URL(request.url).pathname.endsWith("/memory-media");
   if (request.method !== "POST") return jsonResponse({ error: "仅支持 POST 请求。" }, 405);
 
   try {
+    if (isMediaUpload) {
+      const pairToken = request.headers.get("x-couple-token");
+      if (!pairToken || pairToken.length < 32) {
+        return jsonResponse({ error: "请先完成两个人的配对。" }, 401);
+      }
+      const { couple, role } = await findCouple(await digest(pairToken));
+      if (!couple.paired_at) return jsonResponse({ error: "请先完成两个人的配对。" }, 409);
+      const mimeType = request.headers.get("content-type")?.split(";")[0].trim() || "";
+      const extension = MEMORY_MEDIA_TYPES[mimeType];
+      const encodedFileName = request.headers.get("x-file-name") || "";
+      const contentLength = Number(request.headers.get("content-length") || 0);
+      let fileName: string;
+      try {
+        fileName = decodeURIComponent(encodedFileName);
+      } catch {
+        return jsonResponse({ error: "文件名无效，请重新选择文件。" }, 400);
+      }
+      if (!extension || !fileName.trim() || fileName.length > 255) {
+        return jsonResponse({ error: "只能上传支持的照片或视频格式。" }, 400);
+      }
+      if (contentLength > MAX_MEMORY_MEDIA_SIZE) {
+        return jsonResponse({ error: "单个照片或视频不能超过 25 MB。" }, 413);
+      }
+      const bytes = await request.arrayBuffer();
+      if (!bytes.byteLength || bytes.byteLength > MAX_MEMORY_MEDIA_SIZE) {
+        return jsonResponse({ error: "文件为空或超过 25 MB 限制。" }, 413);
+      }
+      const path = `${couple.id}/${role}/${crypto.randomUUID()}.${extension}`;
+      await storage(`object/${MEMORY_BUCKET}/${storagePath(path)}`, {
+        method: "POST",
+        headers: { "Content-Type": mimeType, "x-upsert": "false" },
+        body: bytes,
+      });
+      return jsonResponse({
+        path,
+        name: fileName,
+        type: mimeType,
+        size: bytes.byteLength,
+      });
+    }
+
     const rawBody = await request.text();
-    if (rawBody.length > 4096) return jsonResponse({ error: "请求内容太长。" }, 413);
+    if (rawBody.length > 16384) return jsonResponse({ error: "请求内容太长。" }, 413);
     const body = JSON.parse(rawBody);
     if (!body || typeof body !== "object" || typeof body.action !== "string") {
       return jsonResponse({ error: "请求内容无效。" }, 400);
@@ -333,6 +451,97 @@ Deno.serve(async request => {
         `love_wake_messages?select=id,sender_role,body,created_at,received_at&couple_id=eq.${couple.id}&order=created_at.desc&limit=100`,
       );
       return jsonResponse({ ...publicState(couple, role), messages });
+    }
+
+    if (body.action === "list-memories") {
+      const rows = await rest(
+        `love_memories?select=id,author_role,memory_date,body,media,created_at&couple_id=eq.${couple.id}&order=memory_date.desc,created_at.desc&limit=200`,
+      ) as Array<{
+        id: string;
+        author_role: "boy" | "girl";
+        memory_date: string;
+        body: string;
+        media: Array<Record<string, unknown>>;
+        created_at: string;
+      }>;
+      const memories = await Promise.all(rows.map(row => withSignedMedia(row)));
+      return jsonResponse({ memories });
+    }
+
+    if (body.action === "create-memory") {
+      if (!couple.paired_at) return jsonResponse({ error: "请先完成两个人的配对。" }, 409);
+      if (typeof body.date !== "string" || !isValidMemoryDate(body.date)) {
+        return jsonResponse({ error: "请选择有效的动态日期。" }, 400);
+      }
+      const text = typeof body.text === "string" ? body.text.trim() : "";
+      if (text.length > 1000) return jsonResponse({ error: "动态文字不能超过 1000 个字。" }, 400);
+      if (!Array.isArray(body.media) || body.media.length > 5) {
+        return jsonResponse({ error: "每条动态最多添加 5 个照片或视频。" }, 400);
+      }
+      if (!text && !body.media.length) {
+        return jsonResponse({ error: "请填写动态内容，或添加照片/视频。" }, 400);
+      }
+      const media = body.media.map((item: Record<string, unknown>) => {
+        if (!item || typeof item.path !== "string" ||
+            !isOwnedMemoryMediaPath(item.path, couple.id, role) ||
+            typeof item.name !== "string" || typeof item.type !== "string" ||
+            !MEMORY_MEDIA_TYPES[item.type] ||
+            typeof item.size !== "number" || item.size <= 0 || item.size > MAX_MEMORY_MEDIA_SIZE) {
+          throw new RequestError("动态里的照片或视频资料无效，请重新选择文件。", 400);
+        }
+        return {
+          path: item.path,
+          name: item.name.slice(0, 255),
+          type: item.type,
+          size: item.size,
+        };
+      });
+      const created = await rest("love_memories?select=id,author_role,memory_date,body,media,created_at", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          couple_id: couple.id,
+          author_role: role,
+          memory_date: body.date,
+          body: text,
+          media,
+        }),
+      }) as Array<{
+        id: string;
+        author_role: "boy" | "girl";
+        memory_date: string;
+        body: string;
+        media: Array<Record<string, unknown>>;
+        created_at: string;
+      }>;
+      return jsonResponse({ memory: await withSignedMedia(created[0]) });
+    }
+
+    if (body.action === "delete-memory") {
+      if (typeof body.memoryId !== "string") {
+        return jsonResponse({ error: "这条生活记录不存在。" }, 400);
+      }
+      const rows = await rest(
+        `love_memories?id=eq.${encodeURIComponent(body.memoryId)}&couple_id=eq.${couple.id}&author_role=eq.${role}&select=id,media`,
+      ) as Array<{ id: string; media: Array<{ path: string }> }>;
+      if (!rows.length) return jsonResponse({ error: "只能删除自己发布的生活记录。" }, 403);
+      await removeMemoryMedia(rows[0].media.map(item => item.path));
+      await rest(
+        `love_memories?id=eq.${encodeURIComponent(body.memoryId)}&couple_id=eq.${couple.id}&author_role=eq.${role}`,
+        { method: "DELETE" },
+      );
+      return jsonResponse({ deleted: true });
+    }
+
+    if (body.action === "delete-memory-media") {
+      if (!Array.isArray(body.paths) || body.paths.length > 5) {
+        return jsonResponse({ error: "待清理的媒体列表无效。" }, 400);
+      }
+      const paths = body.paths.filter((path: unknown): path is string =>
+        typeof path === "string" && isOwnedMemoryMediaPath(path, couple.id, role)
+      );
+      await removeMemoryMedia(paths);
+      return jsonResponse({ deleted: true });
     }
 
     if (body.action === "send-wake") {
