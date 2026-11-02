@@ -57,7 +57,11 @@ Deno.serve(async (request) => {
     if (body.action === "publish") {
       validateWork(body.work);
       const work = body.work as Work;
-      const uploads = Array.isArray(body.uploads) ? body.uploads : [];
+      const uploads: Array<{ path: string; sha: string }> = Array.isArray(
+          body.uploads,
+        )
+        ? body.uploads
+        : [];
       const expectedPaths = work.type === "image"
         ? work.images || [work.media]
         : [work.media];

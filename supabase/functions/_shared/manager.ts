@@ -275,6 +275,9 @@ export function validateWork(work: unknown): asserts work is Work {
   if (typeof value.featured !== "boolean") {
     throw new Error("首页精选设置无效。");
   }
+  if (typeof value.media !== "string" || !value.media.trim()) {
+    throw new Error("作品媒体路径无效。");
+  }
   if (value.images !== undefined) {
     if (value.type !== "image" || !Array.isArray(value.images)) {
       throw new Error("只有图片作品可以附加多张图片。");
@@ -292,8 +295,6 @@ export function validateWork(work: unknown): asserts work is Work {
     ) {
       throw new Error("作品图片路径或封面图片无效。");
     }
-  } else if (value.type === "image" && typeof value.media !== "string") {
-    throw new Error("作品封面图片无效。");
   }
 }
 

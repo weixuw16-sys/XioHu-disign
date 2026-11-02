@@ -63,9 +63,10 @@
             card.dataset.type = work.type;
 
             const media = document.createElement("div");
+            const images = getImageGallery(work);
+            const hasGallery = images.length > 1;
             media.className = `portfolio-media${work.category === "illustration" ? " illustration-media" : ""}`;
             media.appendChild(makeMedia(work));
-            const images = getImageGallery(work);
             if (images.length) {
                 media.dataset.imageGallery = JSON.stringify(images);
                 if (images.length > 1) {
