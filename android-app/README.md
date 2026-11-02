@@ -4,15 +4,17 @@ This is the native Android package for **我们的小小宇宙**. Capacitor pack
 the existing couple-space pages into an Android app; the installed app starts
 on the role setup page and works offline after installation.
 
-The couple app connects through the existing Supabase project. Apply
-`supabase/migrations/20261016000000_create_love_couples.sql` in its SQL Editor
-and `supabase/migrations/20261017000000_create_love_push_tokens.sql`, then
-deploy the `couple-sync` function before sharing the APK. The boy creates a
-10-character invitation code; the girl installs the app and enters it to
-receive the confession. Firebase Cloud Messaging requires a Firebase project,
-an ignored `android/app/google-services.json` file, and the server-only
-`FIREBASE_SERVICE_ACCOUNT_JSON` Supabase secret. See `supabase/SETUP.md`.
-Daily photos and videos are currently stored on each device.
+The couple app connects through the existing Supabase project. Apply the
+migrations `20261016000000_create_love_couples.sql`,
+`20261017000000_create_love_push_tokens.sql`, and
+`20261018000000_create_love_memories.sql` in its SQL Editor, then deploy the
+`couple-sync` function before sharing the APK. The memories migration creates
+a private cloud storage bucket; paired phones can then share daily records and
+up to five photos/videos (25 MB each). Existing records created before cloud
+sync remain on their original device. Firebase Cloud Messaging requires a
+Firebase project, an ignored `android/app/google-services.json` file, and the
+server-only `FIREBASE_SERVICE_ACCOUNT_JSON` Supabase secret. See
+`supabase/SETUP.md`.
 
 ## Build a debug APK on Windows
 

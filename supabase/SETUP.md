@@ -120,11 +120,15 @@ app:
    `supabase/migrations/20261016000000_create_love_couples.sql`.
 2. In the Supabase SQL Editor, also run
    `supabase/migrations/20261017000000_create_love_push_tokens.sql`.
-3. Merge the app changes to `main`, then run **Deploy portfolio manager
+3. In the Supabase SQL Editor, run
+   `supabase/migrations/20261018000000_create_love_memories.sql`. This creates
+   the shared memories table and a private media bucket (up to five files per
+   memory, 25 MiB per file).
+4. Merge the app changes to `main`, then run **Deploy portfolio manager
    backend** from the repository's Actions tab. The workflow deploys the
    `couple-sync` function with JWT verification disabled because the function
    validates each device's random, private pairing token itself.
-4. Build and share the updated Android APK. The boy creates a 10-character
+5. Build and share the updated Android APK. The boy creates a 10-character
    invitation code; the girl installs the app, chooses **我是女生**, and enters
    the code to receive the confession.
 
@@ -147,4 +151,6 @@ are stored in a service-role-only table. The service-role key stays in Supabase.
    Once both people have paired and registered their device, new wake messages
    can arrive as Android system notifications even when the app is closed.
 
-Daily photos and videos remain device-local for now.
+Daily records and their photos/videos sync between both paired phones after
+the memories migration, updated function, and updated Android app are in place.
+Existing records saved before this update remain on their original device.

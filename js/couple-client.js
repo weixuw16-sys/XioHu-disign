@@ -51,6 +51,34 @@
         return result;
     };
 
+    const uploadMemoryMedia = async file => {
+        let response;
+        try {
+            response = await fetch(`${SUPABASE_URL}/functions/v1/couple-sync/memory-media`, {
+                method: "POST",
+                headers: {
+                    apikey: SUPABASE_KEY,
+                    "x-couple-token": session.pairToken,
+                    "x-file-name": encodeURIComponent(file.name),
+                    "Content-Type": file.type
+                },
+                body: file
+            });
+        } catch (error) {
+            console.error("Could not upload couple memory media:", error);
+            throw new Error("照片或视频上传失败，请检查网络后重试。");
+        }
+        let result;
+        try {
+            result = await response.json();
+        } catch (error) {
+            console.error("The couple service returned an invalid media response:", error);
+            throw new Error("服务器暂时无法读取上传结果，请刷新生活记录后检查。");
+        }
+        if (!response.ok) throw new Error(result.error || "照片或视频上传失败。");
+        return result;
+    };
+
     const showPushNotification = notification => {
         const toast = document.createElement("div");
         toast.className = "push-notification-toast";
@@ -550,10 +578,7 @@
             }
             if (page === "wake.html") await initWakePage();
             if (page === "memories.html") {
-                setStatus(
-                    document.getElementById("memoryStatus"),
-                    "日常记录暂存在这台手机；照片、视频和动态的跨设备同步正在准备中。"
-                );
+                setStatus(document.getElementById("memoryStatus"), "正在加载你们共同的生活记录…");
             }
         } catch (error) {
             console.error("Could not load couple app data:", error);
@@ -569,6 +594,11 @@
         get isNative() {
             return isNative;
         },
-        init: initNativeApp
+        init: initNativeApp,
+        listMemories: async () => (await request("list-memories")).memories,
+        uploadMemoryMedia,
+        createMemory: payload => request("create-memory", payload),
+        deleteMemory: memoryId => request("delete-memory", { memoryId }),
+        deleteMemoryMedia: paths => request("delete-memory-media", { paths })
     };
 })();
